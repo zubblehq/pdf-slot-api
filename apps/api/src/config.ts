@@ -4,6 +4,8 @@ export type Config = {
   apiKey: string
   webOrigin: string
   blobDir?: string
+  /** A container SAS URL; set, it is Azure Blob rather than Vercel Blob that stores the bytes. */
+  azureBlobSasUrl?: string
   /**
    * Which `@pdf-slot/core` this service is running -- the commit its
    * package.json is pinned to, injected at image build time.
@@ -20,10 +22,13 @@ const VARS = { databaseUrl: 'DATABASE_URL', blobToken: 'BLOB_READ_WRITE_TOKEN', 
 
 /** Reads the environment once at startup; a missing variable is a startup error, not a runtime surprise. */
 export function readConfig(env: Record<string, string | undefined>): Config {
-  // BLOB_DIR opts into local, file-backed blob storage; when it's set, BLOB_READ_WRITE_TOKEN is optional.
+  // Either of these opts out of Vercel Blob, and then BLOB_READ_WRITE_TOKEN
+  // is not needed: BLOB_DIR for local file-backed storage, AZURE_BLOB_SAS_URL
+  // for a container on Azure.
   const blobDir = env.BLOB_DIR
+  const azureBlobSasUrl = env.AZURE_BLOB_SAS_URL
   const missing = Object.values(VARS).filter((name) => {
-    if (name === VARS.blobToken && blobDir) return false
+    if (name === VARS.blobToken && (blobDir || azureBlobSasUrl)) return false
     return !env[name]
   })
   if (missing.length > 0) throw new Error(`Missing environment variables: ${missing.join(', ')}`)
@@ -35,6 +40,7 @@ export function readConfig(env: Record<string, string | undefined>): Config {
     // slash; a copy-pasted `https://app.example.com/` would otherwise block every request.
     webOrigin: env.WEB_ORIGIN!.replace(/\/+$/, ''),
     ...(blobDir ? { blobDir } : {}),
+    ...(azureBlobSasUrl ? { azureBlobSasUrl } : {}),
     ...(env.CORE_VERSION ? { coreVersion: env.CORE_VERSION } : {}),
   }
 }

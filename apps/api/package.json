@@ -15,6 +15,7 @@
     "db:migrate:http": "node scripts/migrate-http.mjs"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.34.0",
     "@hono/zod-validator": "^0.9.1",
     "@pdf-slot/core": "*",
     "@vercel/blob": "^2.8.0",

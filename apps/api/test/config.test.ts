@@ -25,6 +25,24 @@ describe('readConfig', () => {
       blobDir: '/tmp/blobs',
     })
   })
+
+  it('allows AZURE_BLOB_SAS_URL in place of BLOB_READ_WRITE_TOKEN', () => {
+    // Storing the bytes on Azure means there is no Vercel Blob token to
+    // give, and startup must not demand one.
+    const sas = 'https://acct.blob.core.windows.net/pdfs?sp=racwl&sig=x'
+    expect(readConfig({ DATABASE_URL: 'postgres://x', API_KEY: 'k', WEB_ORIGIN: 'o', AZURE_BLOB_SAS_URL: sas })).toEqual({
+      databaseUrl: 'postgres://x',
+      blobToken: '',
+      apiKey: 'k',
+      webOrigin: 'o',
+      azureBlobSasUrl: sas,
+    })
+  })
+
+  it('still demands a blob token when neither alternative is given', () => {
+    expect(() => readConfig({ DATABASE_URL: 'postgres://x', API_KEY: 'k', WEB_ORIGIN: 'o' }))
+      .toThrow(/BLOB_READ_WRITE_TOKEN/)
+  })
 })
 
 describe('the layout engine version', () => {
