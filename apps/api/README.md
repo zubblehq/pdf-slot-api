@@ -83,6 +83,32 @@ Postgres, see `test/helpers/db.ts`) and blob storage is an in-memory map
 (`src/blob/memoryBlobStore.ts`). Nothing is mocked at the network boundary -- the same repository
 and route code runs against PGlite as runs against real Postgres in production.
 
+## Azure Blob storage
+
+`AZURE_BLOB_SAS_URL` -- a container SAS URL -- stores the bytes on Azure
+instead of Vercel Blob. The URL carries the account, the container, what
+the credential may do and until when, so nothing else is configured and
+no account key is held anywhere. The SAS needs `racwdl`: read, add,
+create, write, delete, list. A read-only one (`sp=r`) answers every
+upload with `403 AuthorizationPermissionMismatch`, and listing needs `l`
+on top of `r`.
+
+### Developing against it
+
+No Azure account required. Azurite is Microsoft's own emulator -- same
+SDK, same wire protocol, same SAS URL shape -- in a local container:
+
+```bash
+scripts/azure-dev.sh          # start Azurite, print the SAS URL
+scripts/azure-dev.sh --run    # ...and run the API on top of it
+npm test -- azureBlobStore    # the store's own tests (skipped if Azurite is not up)
+docker rm -f pdfslot-azurite  # stop it
+```
+
+The store is held to the same contract as the disk and memory ones (see
+`test/diskBlobStore.test.ts`), so nothing above `BlobStore` knows or
+cares which of the four it is talking to.
+
 ## Deploying
 
 From `apps/api`:
