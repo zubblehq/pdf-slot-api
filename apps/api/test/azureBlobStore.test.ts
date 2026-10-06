@@ -24,17 +24,42 @@ const EMULATOR =
   'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;' +
   'BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;'
 
-const running = await fetch('http://127.0.0.1:10000/devstoreaccount1?comp=list')
-  .then(() => true)
-  .catch(() => false)
+/**
+ * AZURE_TEST_SAS_URL points these at a real container instead -- the
+ * final check that a SAS really carries the permissions the app needs,
+ * which an emulator cannot tell you.
+ *
+ * Against a real one the container is somebody else's: it is not created
+ * and never deleted, every blob goes under a prefix of its own, and that
+ * prefix is removed at the end.
+ */
+const REAL_SAS = process.env.AZURE_TEST_SAS_URL
+const PREFIX = REAL_SAS ? `_test-${Date.now()}/` : ''
 
-describe.skipIf(!running)('azure blob store (against Azurite)', () => {
-  const name = `test-${Date.now()}`
-  const container = new ContainerClient(EMULATOR, name)
-  const blobs = createAzureBlobStore(container)
+const reachable = REAL_SAS
+  ? true
+  : await fetch('http://127.0.0.1:10000/devstoreaccount1?comp=list').then(() => true).catch(() => false)
 
-  beforeAll(async () => { await container.createIfNotExists() })
-  afterAll(async () => { await container.deleteIfExists() })
+describe.skipIf(!reachable)(`azure blob store (${REAL_SAS ? 'against a real container' : 'against Azurite'})`, () => {
+  const container = REAL_SAS
+    ? new ContainerClient(REAL_SAS)
+    : new ContainerClient(EMULATOR, `test-${Date.now()}`)
+  const store = createAzureBlobStore(container)
+  // Every path the cases use is scoped to this run.
+  const blobs = {
+    put: (p: string, body: Parameters<typeof store.put>[1], type: string) => store.put(PREFIX + p, body, type),
+    get: (p: string) => store.get(PREFIX + p),
+    delete: (paths: string[]) => store.delete(paths.map((p) => PREFIX + p)),
+  }
+
+  beforeAll(async () => { if (!REAL_SAS) await container.createIfNotExists() })
+  afterAll(async () => {
+    if (!REAL_SAS) { await container.deleteIfExists(); return }
+    // Leave the real container exactly as it was found.
+    const left: string[] = []
+    for await (const blob of container.listBlobsFlat({ prefix: PREFIX })) left.push(blob.name)
+    await Promise.all(left.map((name) => container.getBlobClient(name).deleteIfExists()))
+  })
 
   it('stores bytes and streams, reads them back with the content type, deletes', async () => {
     await blobs.put('a.pdf', new Uint8Array([1, 2, 3]), 'application/pdf')
