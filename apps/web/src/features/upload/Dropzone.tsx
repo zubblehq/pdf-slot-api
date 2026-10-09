@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Upload } from 'lucide-react'
-import { imageToPdf } from '@pdf-slot/core'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { decodeImage } from './decodeImage'
@@ -15,7 +14,14 @@ function isPdfFile(file: File): boolean {
 
 /** Convert a validated upload into PDF bytes (images are wrapped in a page), or throw. */
 async function toPdfBytes(file: File): Promise<Uint8Array> {
-  return isPdfFile(file) ? new Uint8Array(await file.arrayBuffer()) : imageToPdf(await decodeImage(file))
+  if (isPdfFile(file)) return new Uint8Array(await file.arrayBuffer())
+  // Imported here, not at the top: `imageToPdf` comes from core's barrel,
+  // which re-exports the renderer and the metrics reader and so pulls in
+  // pdf-lib and fontkit -- about a megabyte that otherwise lands on everyone
+  // who opens the start screen, including the majority who go on to drop a
+  // PDF and never need an image converted at all.
+  const { imageToPdf } = await import('@pdf-slot/core')
+  return imageToPdf(await decodeImage(file))
 }
 
 export type UploadedFile = { bytes: Uint8Array; name: string }

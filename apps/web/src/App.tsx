@@ -1,12 +1,27 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { Dropzone, type UploadedFile } from '@/features/upload/Dropzone'
 import { SavedFiles } from '@/features/files/SavedFiles'
-import { TemplateEditor } from '@/features/template/TemplateEditor'
-import { openFile, type OpenedFile } from '@/features/template/openFile'
+import type { OpenedFile } from '@/features/template/openFile'
 import { isFileId } from '@/lib/files/fileHash'
 import { templateStore } from '@/lib/persistence'
+
+/**
+ * The editor, and the code that opens a PDF, are loaded when a file is --
+ * not before.
+ *
+ * Between them they pull in pdf.js, pdf-lib and fontkit, which is most of
+ * this app's weight. Someone arriving at the start screen has not asked for
+ * any of it yet, and whichever path they take next (upload, or reopening a
+ * saved file) goes through `loadPdfTools` first, so the wait is the same one
+ * they were already waiting for.
+ */
+const TemplateEditor = lazy(() =>
+  import('@/features/template/TemplateEditor').then((m) => ({ default: m.TemplateEditor })),
+)
+
+const loadPdfTools = () => import('@/features/template/openFile')
 
 /**
  * Toasts, with the theme stated rather than detected.
@@ -17,6 +32,15 @@ import { templateStore } from '@/lib/persistence'
  */
 function Notifications() {
   return <Toaster theme="dark" position="top-center" />
+}
+
+/** Shown only for as long as the editor chunk takes to arrive. */
+function EditorLoading() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">
+      Opening…
+    </div>
+  )
 }
 
 export function App() {
@@ -40,6 +64,7 @@ export function App() {
           await templateStore.clear()
           return
         }
+        const { openFile } = await loadPdfTools()
         const result = await openFile(file.source, file.name, templateStore)
         if (!cancelled) setOpened(result)
       } catch (err) {
@@ -59,6 +84,7 @@ export function App() {
 
   const handleFile = async ({ bytes, name }: UploadedFile) => {
     try {
+      const { openFile } = await loadPdfTools()
       const result = await openFile(bytes, name, templateStore)
       // openFile falls back to a random id only when SubtleCrypto is
       // missing (insecure origin); anything else is a content hash.
@@ -92,14 +118,16 @@ export function App() {
   if (opened) {
     return (
       <>
-        {/* Keyed on the file so a restore or a fresh open remounts the editor
-            with new initial state instead of reusing stale hooks. */}
-        <TemplateEditor
-          key={opened.fileId}
-          opened={opened}
-          store={templateStore}
-          onStartOver={() => setOpened(null)}
-        />
+        <Suspense fallback={<EditorLoading />}>
+          {/* Keyed on the file so a restore or a fresh open remounts the editor
+              with new initial state instead of reusing stale hooks. */}
+          <TemplateEditor
+            key={opened.fileId}
+            opened={opened}
+            store={templateStore}
+            onStartOver={() => setOpened(null)}
+          />
+        </Suspense>
         <Notifications />
       </>
     )
