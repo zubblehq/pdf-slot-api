@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useState } from 'react'
 import type { Align, FontId, Point, RGB, Slot, TemplateTable } from '@pdf-slot/core'
 import { randomId } from '@/lib/files/fileHash'

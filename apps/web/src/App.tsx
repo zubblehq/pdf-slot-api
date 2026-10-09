@@ -1,7 +1,6 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { Toaster } from '@/components/ui/sonner'
 import { Dropzone, type UploadedFile } from '@/features/upload/Dropzone'
 import { SavedFiles } from '@/features/files/SavedFiles'
 import { TemplateEditor } from '@/features/template/TemplateEditor'
@@ -9,7 +8,18 @@ import { openFile, type OpenedFile } from '@/features/template/openFile'
 import { isFileId } from '@/lib/files/fileHash'
 import { templateStore } from '@/lib/persistence'
 
-export default function Home() {
+/**
+ * Toasts, with the theme stated rather than detected.
+ *
+ * `layout.tsx` rendered this once around every page. There is no theme
+ * switcher -- `index.html` sets `dark` on `<html>` -- so sonner's own
+ * `useTheme` would report "system" and could disagree with the page.
+ */
+function Notifications() {
+  return <Toaster theme="dark" position="top-center" />
+}
+
+export function App() {
   const [opened, setOpened] = useState<OpenedFile | null>(null)
   // Nothing renders until the restore has been attempted, so a saved
   // session never flashes the dropzone before landing in the editor.
@@ -81,29 +91,35 @@ export default function Home() {
   // centred column.
   if (opened) {
     return (
-      // Keyed on the file so a restore or a fresh open remounts the editor
-      // with new initial state instead of reusing stale hooks.
-      <TemplateEditor
-        key={opened.fileId}
-        opened={opened}
-        store={templateStore}
-        onStartOver={() => setOpened(null)}
-      />
+      <>
+        {/* Keyed on the file so a restore or a fresh open remounts the editor
+            with new initial state instead of reusing stale hooks. */}
+        <TemplateEditor
+          key={opened.fileId}
+          opened={opened}
+          store={templateStore}
+          onStartOver={() => setOpened(null)}
+        />
+        <Notifications />
+      </>
     )
   }
 
   return (
-    <main className="flex min-h-dvh flex-col justify-center px-6 py-10">
-      <div className="mx-auto w-full max-w-4xl">
-        <h1 className="text-2xl font-medium tracking-tight">PDF Slot Editor</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Lay out named text slots on a PDF once; fill them in every time after.
-        </p>
-        <div className="mt-6">
-          <Dropzone onFile={handleFile} />
-          <SavedFiles store={templateStore} onOpen={(id) => void handleOpenSaved(id)} />
+    <>
+      <main className="flex min-h-dvh flex-col justify-center px-6 py-10">
+        <div className="mx-auto w-full max-w-4xl">
+          <h1 className="text-2xl font-medium tracking-tight">PDF Slot Editor</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Lay out named text slots on a PDF once; fill them in every time after.
+          </p>
+          <div className="mt-6">
+            <Dropzone onFile={handleFile} />
+            <SavedFiles store={templateStore} onOpen={(id) => void handleOpenSaved(id)} />
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <Notifications />
+    </>
   )
 }

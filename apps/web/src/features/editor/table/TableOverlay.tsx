@@ -1,8 +1,6 @@
 // Hand-rolled rather than shadcn: like SlotOverlay, this is a canvas
 // primitive -- pointer-captured drags mapped into PDF coordinate space --
 // and shadcn has no equivalent. See CLAUDE.md.
-'use client'
-
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import {
   columnLeft,

@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, type PointerEvent } from 'react'
 import type { Slot, Viewport } from '@pdf-slot/core'
 import { applyDragDelta, applyEdgeResize, type DragOrigin, type ResizeEdge, type ResizeOrigin } from './dragGeometry'

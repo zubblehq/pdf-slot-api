@@ -1,5 +1,3 @@
-'use client'
-
 import ScenaRuler from '@scena/react-ruler'
 import { chooseStep } from './rulerTicks'
 import { useThemeTokens } from './useThemeTokens'

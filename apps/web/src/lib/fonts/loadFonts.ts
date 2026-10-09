@@ -1,4 +1,5 @@
 import { FONT_CSS_FAMILY, FONT_FILES, FONT_IDS, type FontBytes } from '@pdf-slot/core'
+import { assetUrl } from '@/lib/assets'
 
 let cache: Promise<FontBytes> | null = null
 
@@ -17,7 +18,7 @@ export function loadFontBytes(): Promise<FontBytes> {
     try {
       const entries = await Promise.all(
         FONT_IDS.map(async (id) => {
-          const res = await fetch(`/fonts/${FONT_FILES[id]}`)
+          const res = await fetch(assetUrl(`fonts/${FONT_FILES[id]}`))
           if (!res.ok) throw new Error(`Failed to load font ${id}`)
           return [id, new Uint8Array(await res.arrayBuffer())] as const
         }),

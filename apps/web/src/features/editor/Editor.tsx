@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { toPdfPoint, type EditorDocument, type Point, type Slot, type TemplateTable, type Viewport } from '@pdf-slot/core'

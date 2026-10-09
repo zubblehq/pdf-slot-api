@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, type PointerEvent } from 'react'
 import {
   MIN_COLUMN_WIDTH,

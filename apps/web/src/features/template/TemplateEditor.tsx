@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { cellName, recordToValues, tableIdOfCell, tableStyle, toLayout, toSlots, toValues, type DataRecord, type Point, type Slot, type TableStyle } from '@pdf-slot/core'

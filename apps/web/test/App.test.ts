@@ -7,7 +7,7 @@ import type { OpenSession } from '@/lib/persistence/templateStore'
 import type { OpenedFile } from '@/features/template/openFile'
 
 /**
- * Home (apps/web/src/app/page.tsx) is what decides Dropzone vs.
+ * App (apps/web/src/App.tsx) is what decides Dropzone vs.
  * TemplateEditor: it restores the last open file on mount and hands an
  * upload to openFile. Both the store and openFile are mocked at module
  * scope; TemplateEditor renders the real Editor, so pdf.js and the fonts
@@ -96,8 +96,8 @@ describe('Home', () => {
   })
 
   it('shows the dropzone when nothing is open', async () => {
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
     expect(screen.queryByTestId('slot-panel')).toBeNull()
@@ -110,8 +110,8 @@ describe('Home', () => {
     const restored: OpenedFile = { doc, name: 'known.pdf', fileId: FILE_ID, layout: knownLayout, values: null }
     openFileMock.mockResolvedValue(restored)
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     await waitFor(() => expect(screen.getByTestId('slot-panel')).toBeTruthy())
     expect(screen.getByTestId('inspector-panel')).toBeTruthy()
@@ -128,8 +128,8 @@ describe('Home', () => {
     openFileMock.mockRejectedValueOnce(new Error('boom'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     await waitFor(() => expect(screen.getByText('Choose a file')).toBeTruthy())
     expect(screen.queryByTestId('slot-panel')).toBeNull()
@@ -139,8 +139,8 @@ describe('Home', () => {
   it('a session whose file is gone falls back to the dropzone and clears the session', async () => {
     memory.session = { fileId: FILE_ID }
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     await waitFor(() => expect(screen.getByText('Choose a file')).toBeTruthy())
     expect(screen.queryByTestId('slot-panel')).toBeNull()
@@ -152,8 +152,8 @@ describe('Home', () => {
     memory.session = { fileId: 'random-uuid' }
     memory.files.set('random-uuid', { fileId: 'random-uuid', name: 'x.pdf', source: bytes, pages: doc.pages, createdAt: 't' })
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     await waitFor(() => expect(screen.getByText('Choose a file')).toBeTruthy())
     expect(screen.queryByTestId('slot-panel')).toBeNull()
@@ -165,8 +165,8 @@ describe('Home', () => {
     const fresh: OpenedFile = { doc, name: 'known.pdf', fileId: FILE_ID, layout: null, values: null }
     openFileMock.mockResolvedValue(fresh)
 
-    const Home = (await import('../src/app/page')).default
-    const { container } = render(createElement(Home))
+    const App = (await import('../src/App')).App
+    const { container } = render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
@@ -187,8 +187,8 @@ describe('Home', () => {
     let finish!: (v: OpenedFile) => void
     openFileMock.mockReturnValue(new Promise<OpenedFile>((resolve) => { finish = resolve }))
 
-    const Home = (await import('../src/app/page')).default
-    const { container } = render(createElement(Home))
+    const App = (await import('../src/App')).App
+    const { container } = render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
@@ -208,8 +208,8 @@ describe('Home', () => {
     const errorSpy = vi.spyOn(sonner.toast, 'error')
     openFileMock.mockRejectedValue(new Error('This PDF is password-protected.'))
 
-    const Home = (await import('../src/app/page')).default
-    const { container } = render(createElement(Home))
+    const App = (await import('../src/App')).App
+    const { container } = render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
@@ -227,8 +227,8 @@ describe('Home', () => {
     const randomId = '0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b'
     openFileMock.mockResolvedValue({ doc: { ...doc, id: randomId }, fileId: randomId, layout: null, values: null })
 
-    const Home = (await import('../src/app/page')).default
-    const { container } = render(createElement(Home))
+    const App = (await import('../src/App')).App
+    const { container } = render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
@@ -244,8 +244,8 @@ describe('Home', () => {
     const warnSpy = vi.spyOn(sonner.toast, 'warning')
     openFileMock.mockResolvedValue({ doc, fileId: FILE_ID, layout: null, values: null })
 
-    const Home = (await import('../src/app/page')).default
-    const { container } = render(createElement(Home))
+    const App = (await import('../src/App')).App
+    const { container } = render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
@@ -261,8 +261,8 @@ describe('Home', () => {
     const restored: OpenedFile = { doc, name: 'known.pdf', fileId: FILE_ID, layout: knownLayout, values: null }
     openFileMock.mockResolvedValue(restored)
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
 
     const row = await waitFor(() => screen.getByTestId(`saved-file-${FILE_ID}`))
     expect(row.textContent).toContain('known.pdf')
@@ -280,8 +280,8 @@ describe('Home', () => {
     memory.files.set(FILE_ID, { fileId: FILE_ID, name: 'known.pdf', source: bytes, pages: doc.pages, createdAt: '2026-09-19T00:00:00.000Z' })
     memory.layouts.set(FILE_ID, knownLayout)
 
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
     await waitFor(() => screen.getByTestId(`saved-file-${FILE_ID}`))
 
     fireEvent.click(screen.getByTestId(`saved-file-delete-${FILE_ID}`))
@@ -294,8 +294,8 @@ describe('Home', () => {
   })
 
   it('shows no list when nothing is saved', async () => {
-    const Home = (await import('../src/app/page')).default
-    render(createElement(Home))
+    const App = (await import('../src/App')).App
+    render(createElement(App))
     await waitFor(() => expect(screen.getByText('Drag a PDF or image here, or')).toBeTruthy())
     expect(screen.queryByTestId('saved-files')).toBeNull()
   })

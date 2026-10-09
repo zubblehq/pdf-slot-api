@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Keyboard, Lock, LockOpen, Table, Trash2, Type } from 'lucide-react'
 import {

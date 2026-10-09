@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { renderPdf, renderPdfIncremental, type EditorDocument, type Slot } from '@pdf-slot/core'
 import { loadFontBytes } from '@/lib/fonts/loadFonts'

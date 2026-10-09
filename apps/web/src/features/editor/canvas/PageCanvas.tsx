@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, type MouseEvent } from 'react'
 import type { RenderTask } from 'pdfjs-dist'
 import { usePdfDocument } from './usePdfDocument'

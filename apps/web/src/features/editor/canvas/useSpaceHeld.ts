@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 
 function isTyping(target: EventTarget | null): boolean {

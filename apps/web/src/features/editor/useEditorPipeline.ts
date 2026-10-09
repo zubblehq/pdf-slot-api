@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -14,6 +12,7 @@ import {
   type Slot,
 } from '@pdf-slot/core'
 import { loadFontBytes, registerFontFaces } from '@/lib/fonts/loadFonts'
+import { renderOnCommit } from '@/lib/env'
 import type { EditorStore } from './state/useEditorStore'
 import { useCommitRender } from './pipeline/useCommitRender'
 import { createSlotCommands, type SlotCommands } from './pipeline/slotCommands'
@@ -27,7 +26,7 @@ const UNSUPPORTED_TOAST_ID = 'unsupported-characters'
  * output while editing. Off by default -- the overlay is the preview and
  * the PDF is generated once, on download.
  */
-const RENDER_ON_COMMIT = process.env.NEXT_PUBLIC_RENDER_ON_COMMIT === 'true'
+const RENDER_ON_COMMIT = renderOnCommit
 
 /** Metrics for every bundled face, built once the font bytes are loaded. */
 function useFontMetrics(): Record<FontId, FontMetrics> | null {

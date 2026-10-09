@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, type KeyboardEvent } from 'react'
 import { AlignCenter, AlignLeft, AlignRight, Ruler, Save } from 'lucide-react'
 import type { Align, Slot, TemplateTable } from '@pdf-slot/core'

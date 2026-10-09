@@ -1,5 +1,3 @@
-'use client'
-
 import { Plus, Rows3, Trash2 } from 'lucide-react'
 import { cellId, type TemplateTable } from '@pdf-slot/core'
 import { HintButton } from '@/components/hint'

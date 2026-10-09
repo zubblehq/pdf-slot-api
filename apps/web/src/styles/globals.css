@@ -2,6 +2,58 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Geist, self-hosted.
+ *
+ * `geist/font/sans` loads these through next/font, which does not exist
+ * without Next. The package ships the woff2 files, so they are imported from
+ * `src/assets` rather than `public`: Vite then fingerprints them and rewrites
+ * these URLs with the app's base path, which a `/fonts/...` in CSS would not
+ * survive once this is mounted under `/app/pdf`.
+ *
+ * Two sans weights and one mono, because that is what the UI asks for --
+ * `font-normal` (400), `font-medium` (500), and mono once, in the colour
+ * field's hex input. The package has eight; shipping the unused ones is bytes
+ * every visitor pays for.
+ *
+ * `font-display: swap` so text paints in the fallback immediately rather than
+ * waiting on the file. This is interface chrome only -- the faces that go
+ * into a PDF are loaded by `lib/fonts/loadFonts.ts` and are not these.
+ */
+@font-face {
+  font-family: "Geist Sans";
+  src: url("../assets/fonts/Geist-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Sans";
+  src: url("../assets/fonts/Geist-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../assets/fonts/GeistMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * next/font set these two on <html>; now they are declared here. The
+ * `@theme` block below still reads them, so every `font-sans` utility and
+ * every `var(--font-sans)` in the overlay resolves exactly as before.
+ */
+:root {
+  --font-geist-sans: "Geist Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

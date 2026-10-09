@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, type KeyboardEvent } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { MIN_COLUMN_WIDTH, type TemplateTable } from '@pdf-slot/core'

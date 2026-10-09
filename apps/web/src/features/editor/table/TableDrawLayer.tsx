@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, useState, type PointerEvent } from 'react'
 import { toPdfPoint, type Viewport } from '@pdf-slot/core'
 import type { DrawnRow } from './useTables'

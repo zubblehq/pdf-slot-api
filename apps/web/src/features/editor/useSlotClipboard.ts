@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef } from 'react'
 import { toPdfPoint, type Slot, type Viewport } from '@pdf-slot/core'
 import type { StagePoint } from './canvas/coordinates'

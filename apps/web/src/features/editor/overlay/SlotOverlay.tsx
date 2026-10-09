@@ -3,8 +3,6 @@
 // space), and shadcn has no equivalent component. See CLAUDE.md. The
 // name editor inside it and the size badge under it are shadcn's Input
 // and Badge.
-'use client'
-
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type KeyboardEvent } from 'react'
 import {
   FONT_CSS_FAMILY,

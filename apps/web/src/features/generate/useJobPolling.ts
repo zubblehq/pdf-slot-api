@@ -1,4 +1,3 @@
-'use client'
 import { useEffect, useState } from 'react'
 import type { JobStatus } from '@pdf-slot/contracts'
 import { fetchJob } from './jobsClient'

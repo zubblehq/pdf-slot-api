@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import { HexColorPicker } from 'react-colorful'
 import { rgbToCss, type RGB } from '@pdf-slot/core'

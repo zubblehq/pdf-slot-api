@@ -3,8 +3,6 @@
 // more above/below this". That edge is a few lines of gradient over the
 // top and bottom of a list, shown only while there is something in that
 // direction to reach. See CLAUDE.md.
-'use client'
-
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'

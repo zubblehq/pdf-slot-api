@@ -1,3 +1,4 @@
+import { apiUrl } from '@/lib/env'
 import type { SessionStore, TemplateStore } from './templateStore'
 import { templateStore as indexedDb } from './indexedDbTemplateStore'
 import { createHttpTemplateStore } from './httpTemplateStore'
@@ -27,5 +28,7 @@ export function selectStores(
   }
 }
 
-export const apiUrl = process.env.NEXT_PUBLIC_API_URL || undefined
+// Re-exported, not re-read: `lib/env` owns the environment (see its comment),
+// and the consumers of this module already import `apiUrl` from here.
+export { apiUrl }
 export const templateStore = selectStores({ apiUrl }, indexedDb, createHttpTemplateStore)

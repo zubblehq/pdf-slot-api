@@ -1,4 +1,3 @@
-'use client'
 import { ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
