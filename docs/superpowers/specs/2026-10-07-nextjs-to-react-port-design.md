@@ -30,6 +30,71 @@ Decisions taken with the user (2026-10-07):
 - **No visual redesign.** The Vercel/Geist direction is already followed.
   A visual pass, if wanted, is separate work after this lands.
 
+## Revised 2026-10-09: where this is going
+
+The product owner answered the Azure questions, and the destination is not a
+standalone site. The UI becomes a module inside **elli-ui** -- their existing
+Vite 7 / React 19 / Tailwind 4 app, routed by `react-router-dom` v7 -- public
+at `accounting.ellihub.com/app/pdf`. Our API moves to their Azure VM's docker
+compose and gets **no public address**: the browser calls Elli's API on the
+same domain, which calls our service internally.
+
+That could have been built directly, and should not be. Agreed with the user
+(2026-10-09), the work is **three stages, in this order**:
+
+1. **Port to React standalone, here.** `apps/web` becomes a Vite app in this
+   monorepo, deployed as a preview off this branch and tested. `packages/core`
+   stays a workspace folder, the 170 tests stay on vitest, and the acceptance
+   gate below stays meaningful.
+2. **Move into elli-ui.** The slice becomes `src/modules/<name>` there, with
+   their shell, their theme and their auth. This is where the open question
+   gets answered: elli-ui is a separate repo, so how it reaches
+   `packages/core` -- published package, git pin, or something else -- has to
+   be decided. It is **not** decided here, and copying `core` is rejected:
+   two copies of the glyph-positioning maths drift, and when they do the
+   preview stops matching the download silently.
+3. **Azure.** Blob prefixed under `pdf/` (the container is shared with Elli's
+   own files, so a template delete must not be able to reach them), Postgres
+   on the VM's `z-db` container, pg-boss in its own schema, a Dockerfile for
+   `elli-devops` to deploy, SAS retained for now.
+
+Staging it this way means stage 1 is verifiable in isolation and stage 2
+inherits a working, tested React app instead of a half-ported one.
+
+### What stage 2 will take back
+
+Honest list, so nothing is a surprise later. Stage 1 deliberately builds
+things stage 2 replaces:
+
+| Stage 1 builds | Stage 2 replaces it with |
+|---|---|
+| `index.html`, `src/main.tsx` | elli-ui's own shell and entry |
+| No router | A `*.route.tsx` registered in their route tree |
+| Hard-coded `dark` theme | elli-ui's theme |
+| Self-hosted Geist | elli-ui's chrome font |
+| API key typed into the generate panel | Elli's session; our key becomes a service-to-service secret |
+| `VITE_API_URL` pointing at Vercel | A same-origin path through Elli's API |
+
+The parts that survive stage 2 untouched are the 65 files under
+`src/features`, `src/lib` and `src/components` -- which is the whole point of
+swapping only the shell.
+
+### Assets must be base-path aware from the start
+
+The one piece of stage-2 knowledge that is worth acting on immediately.
+
+Mounted at `/app/pdf`, `loadFonts.ts`'s `fetch('/fonts/Inter-Regular.ttf')`
+resolves against the domain root, 404s, and nothing renders at all -- the
+invariant fails loudly rather than subtly, but it fails. So stage 1 does not
+hard-code a leading slash: asset URLs are built from Vite's `BASE_URL`, which
+is `/` standalone and `/app/pdf/` under elli-ui, and the same applies to
+pdf.js's worker asset.
+
+This is correct at both stages and costs nothing now, so it is not deferred.
+Whether the `/app/` segment is served by their reverse proxy or by the app
+itself is still unconfirmed -- it changes what `BASE_URL` must be set to, not
+whether the code should read it.
+
 ## Why this is a small change
 
 `apps/web` barely touches Next. The whole coupling is:
@@ -161,12 +226,21 @@ it is a dashboard change, not a code change.
 `npm run dev` → `vite`, `build` → `vite build`, `preview` replaces `start`.
 Output is `dist/`: plain HTML, JS and CSS.
 
-Vercel keeps working — the `pdf-slot-design` project's framework preset
-changes from Next.js to Vite, and that is the only project setting that
-moves. Worth noting for the Azure thread: static output means the frontend
-can also be served by any web server or dropped in a blob container, with no
-Node process. That is a consequence, not a goal, and nothing here commits to
-it.
+Stage 1 ships as a **preview deployment off this branch**, never to
+production. A `vercel.json` committed here sets `"framework": "vite"`, which
+Vercel applies per deployment on top of the project's dashboard settings
+(`{...project.settings, ...pickOverrides(localConfig)}` in its own source).
+So the branch builds with Vite while production carries on serving the Next
+build, and the project's preset is never edited. Previews also read the
+*Preview* environment's variables, so `VITE_API_URL` is set there and
+production's variables are left alone.
+
+Vite's framework definition carries no SPA rewrite, so `vercel.json` also
+needs the catch-all to `index.html` that every other SPA framework ships
+with; without it any path but `/` 404s.
+
+Production only changes if and when someone merges this branch, which is a
+separate decision and not part of stage 1.
 
 `apps/api` is untouched.
 
@@ -227,7 +301,10 @@ a stray character lands. The test suite is the guard.
 
 ## Out of scope
 
-Any visual redesign. Restructuring `src/`. Adding a router — the app is one
-screen, and a router for one screen is weight with no payer. Moving the
-frontend off Vercel. Touching `apps/api`, `packages/core` or
-`packages/contracts`.
+Out of scope for **stage 1**, and deliberately so: any visual redesign,
+restructuring `src/`, adding a router (one screen, and standalone it has one
+address), and touching `apps/api`, `packages/core` or `packages/contracts`.
+
+Out of scope for this spec entirely, pending their own designs: the move into
+elli-ui (stage 2) and the Azure work (stage 3). The table above records what
+they will undo, so stage 1 does not pretend to be the final shape.
