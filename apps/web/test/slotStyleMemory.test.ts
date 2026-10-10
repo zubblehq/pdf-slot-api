@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Slot } from '@pdf-slot/core'
-import { recallSlotStyle, rememberSlotStyle, SLOT_STYLE_KEY } from '@/features/editor/state/slotStyleMemory'
+import { recallSlotStyle, rememberSlotStyle, SLOT_STYLE_KEY } from '@/modules/pdf-editor/lib/slot-style-memory'
 
 /**
  * A new text box starts with the font, size, colour and alignment the

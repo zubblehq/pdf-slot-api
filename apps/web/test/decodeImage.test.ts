@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { decodeImage } from '../src/features/upload/decodeImage'
+import { decodeImage } from '@/modules/pdf-editor/components/upload/decodeImage'
 
 /**
  * jsdom implements neither `createImageBitmap` (undefined globally) nor a

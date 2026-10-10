@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkColumns, noColumnsMatch, validateBeforeSubmit } from '@/features/generate/checkColumns'
+import { checkColumns, noColumnsMatch, validateBeforeSubmit } from '@/modules/pdf-editor/components/generate/checkColumns'
 
 const rows = (...columns: string[]) => [Object.fromEntries(columns.map((c) => [c, 'x']))]
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createJob, fetchJob } from '@/features/generate/jobsClient'
+import { createJob, fetchJob } from '@/modules/pdf-editor/components/generate/jobsClient'
 
 const fileId = 'a'.repeat(64)
 const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })

@@ -29,7 +29,7 @@ describe('usePdfDocument', () => {
   })
 
   it('hands pdf.js a copy of the bytes, never the caller\'s own array reference', async () => {
-    const { usePdfDocument } = await import('../src/features/editor/canvas/usePdfDocument')
+    const { usePdfDocument } = await import('@/modules/pdf-editor/components/canvas/usePdfDocument')
     const bytes = new Uint8Array([1, 2, 3, 4])
     const fakeDoc = {}
     getDocumentMock.mockReturnValue({ promise: Promise.resolve(fakeDoc), destroy: vi.fn() })

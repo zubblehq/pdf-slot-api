@@ -2,7 +2,7 @@ import { createElement, useMemo, useState } from 'react'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EditorDocument, Slot } from '@pdf-slot/core'
-import { TooltipProvider } from '../src/components/ui/tooltip'
+import { TooltipProvider } from '@/app/components/ui/tooltip'
 
 /**
  * End-to-end (within jsdom, at the seam) check of the download pipeline
@@ -26,7 +26,7 @@ vi.mock('@pdf-slot/core', async (importOriginal) => {
   }
 })
 
-vi.mock('../src/lib/fonts/loadFonts', () => ({
+vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => Promise.resolve({}),
 }))
 
@@ -92,8 +92,8 @@ describe('commit -> preview -> download pipeline', () => {
   })
 
   it('a first download renders once from scratch; a second one after an edit appends an increment', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
-    const { DownloadButton } = await import('../src/features/editor/toolbar/DownloadButton')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
+    const { DownloadButton } = await import('@/modules/pdf-editor/components/toolbar/DownloadButton')
 
     const output = new Uint8Array([42, 43])
     const outputPlus = new Uint8Array([42, 43, 44])
@@ -159,8 +159,8 @@ describe('commit -> preview -> download pipeline', () => {
     // The render is deliberately held open here until after the click, so
     // the click genuinely happens mid-render rather than by luck of
     // microtask ordering.
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
-    const { DownloadButton } = await import('../src/features/editor/toolbar/DownloadButton')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
+    const { DownloadButton } = await import('@/modules/pdf-editor/components/toolbar/DownloadButton')
 
     const edited = new Uint8Array([7, 7, 7])
     const releaseRender: { current: (() => void) | null } = { current: null }
@@ -229,7 +229,7 @@ describe('commit -> preview -> download pipeline', () => {
     // -- move one, type in one, put a row of a data file on the page --
     // and the picture keeps the old text while the overlay draws the new,
     // which is two copies of the words a few points apart.
-    const { useEditorPipeline } = await import('../src/features/editor/useEditorPipeline')
+    const { useEditorPipeline } = await import('@/modules/pdf-editor/hooks/use-editor-pipeline')
 
     renderPdfMock.mockResolvedValue(new Uint8Array([42, 43]))
     const doc = makeDoc()

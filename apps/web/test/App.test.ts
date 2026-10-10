@@ -3,8 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakePdfjsDocument, installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, StoredFile, TemplateLayout, TemplateValues } from '@pdf-slot/core'
-import type { OpenSession } from '@/lib/persistence/templateStore'
-import type { OpenedFile } from '@/features/template/openFile'
+import type { OpenSession } from '@/modules/pdf-editor/api/persistence/templateStore'
+import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
 
 /**
  * App (apps/web/src/App.tsx) is what decides Dropzone vs.
@@ -36,7 +36,7 @@ const { memory, openFileMock } = vi.hoisted(() => {
   return { memory, openFileMock: vi.fn() }
 })
 
-vi.mock('@/lib/persistence/indexedDbTemplateStore', () => ({
+vi.mock('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore', () => ({
   templateStore: {
     getFile: async (id: string) => memory.files.get(id) ?? null,
     putFile: async (f: StoredFile) => { memory.files.set(f.fileId, f) },
@@ -64,7 +64,7 @@ vi.mock('@/lib/persistence/indexedDbTemplateStore', () => ({
   },
 }))
 
-vi.mock('@/features/template/openFile', () => ({
+vi.mock('@/modules/pdf-editor/lib/open-file', () => ({
   openFile: (...args: unknown[]) => openFileMock(...args),
 }))
 

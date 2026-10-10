@@ -66,9 +66,9 @@ type HarnessProps = {
 
 /** The workspace with a real store and pipeline; placing a slot names it "Field". */
 async function makeHarness() {
-  const { Editor } = await import('../src/features/editor/Editor')
-  const { useEditorStore } = await import('../src/features/editor/state/useEditorStore')
-  const { useEditorPipeline } = await import('../src/features/editor/useEditorPipeline')
+  const { Editor } = await import('@/modules/pdf-editor/pages/editor-page')
+  const { useEditorStore } = await import('@/modules/pdf-editor/hooks/use-editor-store')
+  const { useEditorPipeline } = await import('@/modules/pdf-editor/hooks/use-editor-pipeline')
   return function Harness({
     doc,
     initialSlots = [],

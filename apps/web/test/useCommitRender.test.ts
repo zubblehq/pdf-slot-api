@@ -21,7 +21,7 @@ vi.mock('@pdf-slot/core', () => ({
     renderPdfIncrementalMock(...args),
 }))
 
-vi.mock('../src/lib/fonts/loadFonts', () => ({
+vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => loadFontBytesMock(),
 }))
 
@@ -69,7 +69,7 @@ describe('useCommitRender', () => {
   })
 
   it('never calls renderPdf just from mounting -- only commit() triggers a render', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const slots = [makeSlot('s1')]
 
@@ -80,7 +80,7 @@ describe('useCommitRender', () => {
   })
 
   it('commit() calls renderPdf with the current doc/slots/fonts and stores the result as bytes', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const slots = [makeSlot('s1', 'Acme Construction Company Limited')]
     const output = new Uint8Array([9, 9, 9])
@@ -103,7 +103,7 @@ describe('useCommitRender', () => {
   })
 
   it('discards a slower, out-of-order render instead of letting it overwrite a newer commit', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const slow = deferred<Uint8Array>()
     const fast = deferred<Uint8Array>()
@@ -157,7 +157,7 @@ describe('useCommitRender', () => {
   })
 
   it('resets bytes when a new document is loaded', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const docA = makeDoc('doc-a')
     const docB = makeDoc('doc-b')
     const slots = [makeSlot('s1')]
@@ -192,7 +192,7 @@ describe('useCommitRender', () => {
     // generated once when the user asks for it. Rendering on every commit
     // stays available as a verification mode (it is how the overlay was
     // proven equal to the output), off by default.
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const { result } = renderHook(() => useCommitRender(makeDoc('doc-1'), [makeSlot('s1')]))
 
     act(() => {
@@ -205,7 +205,7 @@ describe('useCommitRender', () => {
   })
 
   it('render(): from scratch the first time, then an increment on top of the last output', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const first = new Uint8Array([1, 1, 1])
     const second = new Uint8Array([1, 1, 1, 2, 2])
@@ -242,7 +242,7 @@ describe('useCommitRender', () => {
 
   it('render() reuses the last output when the slots have not changed since', async () => {
     // Two downloads in a row must not append an empty increment.
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const slots = [makeSlot('s1')]
     const first = new Uint8Array([1, 1, 1])
@@ -263,7 +263,7 @@ describe('useCommitRender', () => {
   })
 
   it('render() while a render is in flight waits for it, then increments on top if the slots moved on', async () => {
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
     const doc = makeDoc('doc-1')
     const first = deferred<Uint8Array>()
     const firstBytes = new Uint8Array([1])

@@ -16,7 +16,7 @@ import {
   createHistory,
   snapshot,
   type HistoryState,
-} from '../src/features/editor/state/editorHistory'
+} from '@/modules/pdf-editor/lib/editor-history'
 
 function makeSlot(overrides: Partial<Slot> = {}): Slot {
   return {

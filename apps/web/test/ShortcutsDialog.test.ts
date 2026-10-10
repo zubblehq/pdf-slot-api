@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ShortcutsDialog, SHORTCUTS_KEY } from '@/features/editor/panels/ShortcutsDialog'
+import { ShortcutsDialog, SHORTCUTS_KEY } from '@/modules/pdf-editor/components/panels/ShortcutsDialog'
 
 describe('ShortcutsDialog', () => {
   afterEach(() => cleanup())

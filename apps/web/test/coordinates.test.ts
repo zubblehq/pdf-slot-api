@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toStagePoint } from '../src/features/editor/canvas/coordinates'
+import { toStagePoint } from '@/modules/pdf-editor/components/canvas/coordinates'
 
 describe('toStagePoint', () => {
   it('subtracts the rect origin from the client point', () => {

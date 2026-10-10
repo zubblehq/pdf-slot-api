@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_BYTES, validateFile } from '../src/features/upload/validate'
+import { MAX_BYTES, validateFile } from '@/modules/pdf-editor/components/upload/validate'
 
 function fileOfSize(bytes: number, name: string, type: string): File {
   return new File([new Uint8Array(bytes)], name, { type })

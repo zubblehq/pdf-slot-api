@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { selectStores } from '@/lib/persistence/index'
-import type { SessionStore, TemplateStore } from '@/lib/persistence/templateStore'
+import { selectStores } from '@/modules/pdf-editor/api/persistence/index'
+import type { SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
 
 function fakeIdb(): TemplateStore & SessionStore {
   return {

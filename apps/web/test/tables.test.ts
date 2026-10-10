@@ -3,8 +3,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, Slot, TemplateLayout, TemplateValues } from '@pdf-slot/core'
-import type { OpenSession, SessionStore, TemplateStore } from '@/lib/persistence/templateStore'
-import type { OpenedFile } from '@/features/template/openFile'
+import type { OpenSession, SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
 
 /**
  * Table row slots, end to end through the real editor: draw the first
@@ -91,7 +91,7 @@ describe('table row slots', () => {
   })
 
   it('drawing a row makes a one-column table; splitting it adds columns that share the width', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
 
@@ -110,7 +110,7 @@ describe('table row slots', () => {
   })
 
   it('adding rows repeats the columns down the page at the row gap', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     fireEvent.click(screen.getByTestId('table-add-column'))
@@ -128,7 +128,7 @@ describe('table row slots', () => {
   })
 
   it('every row has a handle on the line beneath it, the last one on the table\'s own edge', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -147,7 +147,7 @@ describe('table row slots', () => {
   it('the row holding the selection is picked out across the whole table', async () => {
     // Choosing a row in the panel selects one cell of it. One highlighted
     // cell among forty is not something a person can find.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -166,7 +166,7 @@ describe('table row slots', () => {
   })
 
   it('a table of many rows stops growing the panel and scrolls instead', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -196,7 +196,7 @@ describe('table row slots', () => {
   })
 
   it('a column resize moves every cell under it, and the text stays where it was typed', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     fireEvent.click(screen.getByTestId('table-add-column'))
@@ -221,7 +221,7 @@ describe('table row slots', () => {
   })
 
   it('a selected table offers handles for its whole width and height', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
 
@@ -239,7 +239,7 @@ describe('table row slots', () => {
   })
 
   it('a divider appears between columns, but never on the right edge', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const dividers = () => dividersOf(container).length
@@ -256,7 +256,7 @@ describe('table row slots', () => {
   })
 
   it('dragging a boundary trades with the next column and leaves the table the same width', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     fireEvent.click(screen.getByTestId('table-add-column'))
@@ -281,7 +281,7 @@ describe('table row slots', () => {
   })
 
   it('dragging the right edge sizes every column at once, each keeping its share', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     fireEvent.click(screen.getByTestId('table-add-column'))
@@ -304,7 +304,7 @@ describe('table row slots', () => {
     // A row's handle runs the width of the table, straight over the
     // boxes people type into. If it kept every click, the bottom of
     // every cell would be dead to the pointer.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -326,7 +326,7 @@ describe('table row slots', () => {
   })
 
   it('dragging the line under a row resizes that row and pushes the rest down', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -349,7 +349,7 @@ describe('table row slots', () => {
   })
 
   it('removing a row drops a line: the rows below move up and keep their text', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -373,7 +373,7 @@ describe('table row slots', () => {
   })
 
   it('removing the last row removes the table: one row is all a table is', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -397,7 +397,7 @@ describe('table row slots', () => {
   })
 
   it('the table can be thrown away from its own header', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -412,7 +412,7 @@ describe('table row slots', () => {
   })
 
   it('backing out of the confirmation leaves the table and its text alone', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -430,7 +430,7 @@ describe('table row slots', () => {
   })
 
   it('the panel lists a table under the page it sits on', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await drawTable(container)
     const tableId = cellBoxes(container)[0]!.dataset.slotId!.split('#')[0]!
@@ -446,7 +446,7 @@ describe('table row slots', () => {
     // and how wide it is. Those must not reach the table's typography:
     // the style is spread over every cell, so an `x` in there would put
     // all four columns on top of the first.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
     await drawTable(container)
@@ -470,7 +470,7 @@ describe('table row slots', () => {
   })
 
   it('saves the table rather than its cells, and opens again with both', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container, unmount } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
     await drawTable(container)
@@ -496,7 +496,7 @@ describe('table row slots', () => {
   })
 
   it('the export draws the cells that were filled in, and nothing for the empty ones', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     class FakeURL extends URL {
       static createObjectURL = vi.fn(() => 'blob:fake')
       static revokeObjectURL = vi.fn()
@@ -532,7 +532,7 @@ describe('table row slots', () => {
 
   describe('a table has a name, and a data file addresses it by that name', () => {
     it('is named by position to begin with, shown in the panel, and renamed from the inspector', async () => {
-      const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+      const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
       const store = memoryStore()
       const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
       await drawTable(container)
@@ -553,7 +553,7 @@ describe('table row slots', () => {
     })
 
     it('will not let a second table take the first one\'s name', async () => {
-      const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+      const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
       const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
       await drawTable(container)
       const field = screen.getByTestId('table-name') as HTMLInputElement

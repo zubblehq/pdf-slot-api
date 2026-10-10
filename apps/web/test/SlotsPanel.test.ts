@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SlotsPanel, type PanelSlot } from '@/features/editor/panels/SlotsPanel'
+import { SlotsPanel, type PanelSlot } from '@/modules/pdf-editor/components/panels/SlotsPanel'
 
 const slots: PanelSlot[] = [
   { id: 'a', name: 'Date', text: '', page: 0, x: 10, y: 700 },

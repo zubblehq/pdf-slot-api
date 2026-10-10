@@ -4,7 +4,7 @@ import { createElement } from 'react'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createFontMetrics, slotInset, toScreenLength, type Slot } from '@pdf-slot/core'
-import { SlotOverlay } from '@/features/editor/overlay/SlotOverlay'
+import { SlotOverlay } from '@/modules/pdf-editor/components/overlay/SlotOverlay'
 
 // jsdom doesn't implement the Pointer Capture API used by SlotOverlay's
 // pointer handlers.

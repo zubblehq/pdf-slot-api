@@ -1,7 +1,7 @@
 import { PDFDocument } from '@cantoo/pdf-lib'
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { openFile } from '@/features/template/openFile'
+import { openFile } from '@/modules/pdf-editor/lib/open-file'
 
 /**
  * openFile against the real IndexedDB store (fake-indexeddb): the file's
@@ -16,7 +16,7 @@ describe('openFile + IndexedDbTemplateStore', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('stores the uploaded file and lists it', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     const d = await PDFDocument.create()
     d.addPage([612, 792])

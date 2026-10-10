@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addTableRow, applyRowRemoval, removeTableRow, resizeColumn, type Slot, type TemplateTable } from '@pdf-slot/core'
-import { cellsWithText, isCell, textsOfCells } from '@/features/editor/table/tableSlots'
+import { cellsWithText, isCell, textsOfCells } from '@/modules/pdf-editor/components/table/tableSlots'
 
 const table: TemplateTable = {
   id: 't1',

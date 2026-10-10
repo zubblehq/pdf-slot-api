@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hashBytes, isFileId, randomId } from '@/lib/files/fileHash'
+import { hashBytes, isFileId, randomId } from '@/modules/pdf-editor/lib/files/fileHash'
 
 describe('hashBytes', () => {
   afterEach(() => vi.unstubAllGlobals())

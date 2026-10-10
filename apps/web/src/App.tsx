@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Toaster } from '@/components/ui/sonner'
-import { Dropzone, type UploadedFile } from '@/features/upload/Dropzone'
-import { SavedFiles } from '@/features/files/SavedFiles'
-import type { OpenedFile } from '@/features/template/openFile'
-import { isFileId } from '@/lib/files/fileHash'
-import { templateStore } from '@/lib/persistence'
+import { Toaster } from '@/app/components/ui/sonner'
+import { Dropzone, type UploadedFile } from '@/modules/pdf-editor/components/upload/Dropzone'
+import { SavedFiles } from '@/modules/pdf-editor/components/files/SavedFiles'
+import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
+import { isFileId } from '@/modules/pdf-editor/lib/files/fileHash'
+import { templateStore } from '@/modules/pdf-editor/api/persistence'
 
 /**
  * The editor, and the code that opens a PDF, are loaded when a file is --
@@ -18,10 +18,10 @@ import { templateStore } from '@/lib/persistence'
  * they were already waiting for.
  */
 const TemplateEditor = lazy(() =>
-  import('@/features/template/TemplateEditor').then((m) => ({ default: m.TemplateEditor })),
+  import('@/modules/pdf-editor/pages/template-editor-page').then((m) => ({ default: m.TemplateEditor })),
 )
 
-const loadPdfTools = () => import('@/features/template/openFile')
+const loadPdfTools = () => import('@/modules/pdf-editor/lib/open-file')
 
 /**
  * Toasts, with the theme stated rather than detected.

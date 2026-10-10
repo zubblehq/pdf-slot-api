@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { useEditorShortcuts } from '@/features/editor/useEditorShortcuts'
+import { useEditorShortcuts } from '@/modules/pdf-editor/hooks/use-editor-shortcuts'
 
 const key = (init: KeyboardEventInit & { key: string }, target: EventTarget = window) =>
   target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))

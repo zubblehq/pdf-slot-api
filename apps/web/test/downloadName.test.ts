@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { downloadName } from '@/features/editor/toolbar/downloadName'
+import { downloadName } from '@/modules/pdf-editor/components/toolbar/downloadName'
 
 describe('downloadName', () => {
   it('keeps the original PDF name', () => {

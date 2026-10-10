@@ -10,7 +10,7 @@ import {
   zoomAtCentre,
   zoomAtPoint,
   type ViewState,
-} from '@/features/editor/canvas/viewportMath'
+} from '@/modules/pdf-editor/components/canvas/viewportMath'
 
 const view: ViewState = { zoom: 1, pan: { x: 100, y: 50 } }
 

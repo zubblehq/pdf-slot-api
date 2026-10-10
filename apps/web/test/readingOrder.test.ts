@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Slot } from '@pdf-slot/core'
-import { groupByPage, readingOrder } from '@/features/template/readingOrder'
+import { groupByPage, readingOrder } from '@/modules/pdf-editor/lib/reading-order'
 
 const slot = (id: string, page: number, x: number, y: number): Slot => ({
   id, page, x, y, width: 100, text: '', fontId: 'sans', size: 12,

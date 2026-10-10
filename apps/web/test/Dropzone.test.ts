@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Dropzone } from '@/features/upload/Dropzone'
+import { Dropzone } from '@/modules/pdf-editor/components/upload/Dropzone'
 
 const pdf = () => new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 1, 2])], 'form.pdf', { type: 'application/pdf' })
 

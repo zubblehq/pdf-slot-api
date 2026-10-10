@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderPdf, FONT_IDS, FONT_FILES, type FontBytes, type StoredFile, type TemplateLayout } from '@pdf-slot/core'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import type { TemplateStore } from '@/lib/persistence/templateStore'
-import { openFile } from '@/features/template/openFile'
+import type { TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import { openFile } from '@/modules/pdf-editor/lib/open-file'
 
 function memoryStore(): TemplateStore & { layouts: Map<string, TemplateLayout>; files: string[]; stored: Map<string, StoredFile> } {
   const layouts = new Map<string, TemplateLayout>()

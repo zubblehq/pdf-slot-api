@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from '@/App'
-import '@/styles/globals.css'
+import '@/app/styles/globals.css'
 
 // Mounting, and nothing else. Providers and the choice of screen belong to App.
 const root = document.getElementById('root')

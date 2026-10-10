@@ -1,8 +1,8 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import { DownloadButton } from '@/features/editor/toolbar/DownloadButton'
+import { TooltipProvider } from '@/app/components/ui/tooltip'
+import { DownloadButton } from '@/modules/pdf-editor/components/toolbar/DownloadButton'
 
 /**
  * How the file actually reaches the disk. A browser reads a blob: URL

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { hasBold, toFontChoice, toFontId } from '@/features/editor/panels/fontChoice'
-import { hexToRgb, rgbToHex } from '@/features/editor/panels/colorHex'
+import { hasBold, toFontChoice, toFontId } from '@/modules/pdf-editor/components/panels/fontChoice'
+import { hexToRgb, rgbToHex } from '@/modules/pdf-editor/components/panels/colorHex'
 
 describe('font family/weight <-> FontId', () => {
   it('splits every bundled face into a family and a weight', () => {

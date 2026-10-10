@@ -23,7 +23,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('round-trips file, layout and values by fileId, and reads null for unknown ids', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     expect(await store.getFile('f1')).toBeNull()
     await store.putFile(file)
@@ -36,7 +36,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('a later put replaces the earlier one', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await store.putValues(values)
     await store.putValues({ ...values, values: { s1: '002' } })
@@ -44,7 +44,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('remembers and clears the open session', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     expect(await store.get()).toBeNull()
     await store.put({ fileId: 'f1' })
@@ -66,7 +66,7 @@ describe('IndexedDbTemplateStore', () => {
       req.onsuccess = () => { req.result.close(); resolve() }
       req.onerror = () => reject(req.error)
     })
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await store.putLayout(layout)
     const names = await new Promise<string[]>((resolve, reject) => {
@@ -82,7 +82,7 @@ describe('IndexedDbTemplateStore', () => {
     vi.stubGlobal('indexedDB', undefined)
     const sonner = await import('sonner')
     const warn = vi.spyOn(sonner.toast, 'warning')
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await expect(store.putLayout(layout)).resolves.toBeUndefined()
     await expect(store.putValues(values)).resolves.toBeUndefined()
@@ -92,7 +92,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('lists saved files with their slot count and last edit, newest first', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await store.putFile(file)
     await store.putFile({ ...file, fileId: 'f2', name: 'other.pdf', createdAt: '2026-09-14T00:00:00.000Z' })
@@ -107,7 +107,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('deleteFile removes the file, its layout and values, and the session if it was open', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await store.putFile(file)
     await store.putLayout(layout)
@@ -122,7 +122,7 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('deleteFile leaves another open session alone', async () => {
-    const { IndexedDbTemplateStore } = await import('../src/lib/persistence/indexedDbTemplateStore')
+    const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await store.putFile(file)
     await store.put({ fileId: 'other' })

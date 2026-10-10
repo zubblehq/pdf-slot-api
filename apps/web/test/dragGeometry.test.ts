@@ -6,7 +6,7 @@ import {
   applyEdgeResize,
   applyResizeDelta,
   clampWidth,
-} from '../src/features/editor/overlay/dragGeometry'
+} from '@/modules/pdf-editor/components/overlay/dragGeometry'
 
 describe('applyDragDelta', () => {
   it('converts a screen-pixel delta to PDF points via the viewport zoom', () => {

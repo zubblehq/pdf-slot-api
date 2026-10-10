@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { GeneratePanel } from '@/features/generate/GeneratePanel'
+import { GeneratePanel } from '@/modules/pdf-editor/components/generate/GeneratePanel'
 
 const fileId = 'a'.repeat(64)
 const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })

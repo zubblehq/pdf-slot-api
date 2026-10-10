@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_JOB_RECORDS } from '@pdf-slot/contracts'
-import { parseRecords } from '@/features/generate/parseRecords'
+import { parseRecords } from '@/modules/pdf-editor/components/generate/parseRecords'
 
 describe('parseRecords', () => {
   it('accepts a JSON array of string objects', () => {

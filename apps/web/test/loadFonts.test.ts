@@ -46,7 +46,7 @@ describe('loadFonts', () => {
     const fetchMock = vi.fn(async () => makeResponse(true))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { loadFontBytes } = await import('../src/lib/fonts/loadFonts')
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     const bytes = await loadFontBytes()
 
     expect(fetchMock).toHaveBeenCalledTimes(FONT_IDS.length)
@@ -61,7 +61,7 @@ describe('loadFonts', () => {
     const fetchMock = vi.fn(async () => makeResponse(true))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { loadFontBytes, registerFontFaces } = await import('../src/lib/fonts/loadFonts')
+    const { loadFontBytes, registerFontFaces } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     const bytes = await loadFontBytes()
     await registerFontFaces(bytes)
 
@@ -76,7 +76,7 @@ describe('loadFonts', () => {
     const fetchMock = vi.fn(async (url: string) => makeResponse(!url.endsWith(FONT_FILES.mono)))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { loadFontBytes } = await import('../src/lib/fonts/loadFonts')
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     await expect(loadFontBytes()).rejects.toThrow('Failed to load font mono')
   })
 
@@ -88,7 +88,7 @@ describe('loadFonts', () => {
     const fetchMock = vi.fn(async () => makeResponse(batch === 'succeed'))
     vi.stubGlobal('fetch', fetchMock)
 
-    const { loadFontBytes } = await import('../src/lib/fonts/loadFonts')
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
 
     await expect(loadFontBytes()).rejects.toThrow('Failed to load font')
 

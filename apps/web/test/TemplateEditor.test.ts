@@ -3,8 +3,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, Slot, TemplateLayout, TemplateValues } from '@pdf-slot/core'
-import type { OpenSession, SessionStore, TemplateStore } from '@/lib/persistence/templateStore'
-import type { OpenedFile } from '@/features/template/openFile'
+import type { OpenSession, SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
 
 /**
  * The one-screen shell, driven the way a user would: click the page, name
@@ -101,7 +101,7 @@ describe('TemplateEditor', () => {
   })
 
   it('records the open file; a click on the page creates a slot named in place, listed in the panel with a field', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
     await waitFor(() => expect(store.session()).toEqual({ fileId: 'file-1' }))
@@ -125,7 +125,7 @@ describe('TemplateEditor', () => {
     // page as a placeholder. It reads exactly like content -- but it is
     // not, and the download (rightly) has none of it. Naming therefore
     // ends in the text box, with the caret in it.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     await placeSlot(container, 'Added')
 
@@ -143,7 +143,7 @@ describe('TemplateEditor', () => {
   })
 
   it('an empty name discards the new slot: Escape, or Enter/blur with nothing typed', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
     const canvas = await waitForCanvas(container)
 
@@ -165,7 +165,7 @@ describe('TemplateEditor', () => {
   })
 
   it('a known file opens with its slots and values; typing in a field shows on the page and vice versa; Save persists both records', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const sonner = await import('sonner')
     const success = vi.spyOn(sonner.toast, 'success')
     const store = memoryStore()
@@ -200,7 +200,7 @@ describe('TemplateEditor', () => {
     // The field used to be an <input type=text>, which strips newlines: one
     // keystroke in the form flattened a two-line value the user had typed
     // on the page.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
     const onPage = await waitFor(() => {
       const el = container.querySelector('[data-slot-id="s1"] textarea')
@@ -216,7 +216,7 @@ describe('TemplateEditor', () => {
 
   it('typing is saved on its own after ~1s, without pressing Save', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: vi.fn() }))
     await waitFor(() => screen.getByTestId('slot-field-s1'))
@@ -228,7 +228,7 @@ describe('TemplateEditor', () => {
 
   it('an untouched new file persists nothing -- not after the debounce, not on unmount', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { unmount } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
     await waitFor(() => screen.getByTestId('empty-hint'))
@@ -239,7 +239,7 @@ describe('TemplateEditor', () => {
   })
 
   it('renaming from the inspector and from the row both change the name everywhere', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: vi.fn() }))
     await waitFor(() => screen.getByTestId('slot-row-s1'))
@@ -262,7 +262,7 @@ describe('TemplateEditor', () => {
   })
 
   it('the padlock freezes the layout: no moving, no placing, no typography -- typing still works', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
     const box = await waitFor(() => {
       const el = container.querySelector('[data-slot-id="s1"]')
@@ -287,7 +287,7 @@ describe('TemplateEditor', () => {
   })
 
   it('Download performs the one render, of the values (never the placeholder names), and saves exactly its bytes', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const renderedOutput = new Uint8Array([9, 9, 9])
     renderPdfMock.mockResolvedValue(renderedOutput)
 
@@ -327,7 +327,7 @@ describe('TemplateEditor', () => {
   })
 
   it('blocks download and names the offending characters for unsupported text', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const sonner = await import('sonner')
     const errorSpy = vi.spyOn(sonner.toast, 'error')
     render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
@@ -343,7 +343,7 @@ describe('TemplateEditor', () => {
   })
 
   it('Start over clears the open session and hands off', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const onStartOver = vi.fn()
     render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver }))
@@ -357,7 +357,7 @@ describe('TemplateEditor', () => {
   it('Start over still hands off when clearing the session fails', async () => {
     // The user asked to leave; a storage error must not trap them in the
     // editor. (The stale session is at worst re-tried on the next reload.)
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = { ...memoryStore(), clear: async () => { throw new Error('quota') } }
     const onStartOver = vi.fn()
     render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver }))
@@ -367,7 +367,7 @@ describe('TemplateEditor', () => {
   })
 
   it('duplicating from a row adds a second slot with the same settings, named "<name> copy", on the page and in the panel', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: vi.fn() }))
     await waitFor(() => screen.getByTestId('slot-duplicate-s1'))
@@ -399,7 +399,7 @@ describe('TemplateEditor', () => {
   })
 
   it('Ctrl+C / Ctrl+V pastes the copied slot on the current page, under the pointer', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const twoPages: OpenedFile = {
       ...knownFile, values: null,
@@ -447,7 +447,7 @@ describe('TemplateEditor', () => {
   })
 
   it('Alt+drag leaves the slot where it is and drags a copy named "<name> copy"', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: vi.fn() }))
     const source = await waitFor(() => {
@@ -480,7 +480,7 @@ describe('TemplateEditor', () => {
   })
 
   it('Ctrl+X lifts a slot out and Ctrl+V puts it down again, keeping its name and its text', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
     await waitFor(() => screen.getByTestId('slot-row-s1'))
     await waitFor(() => {
@@ -504,7 +504,7 @@ describe('TemplateEditor', () => {
   })
 
   it('the page stage is not text-selectable and never starts a native drag (which would hijack a slot drag)', async () => {
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
     const stage = await waitFor(() => screen.getByTestId('page-stage'))
     expect(stage.style.userSelect).toBe('none')
@@ -522,7 +522,7 @@ describe('TemplateEditor', () => {
     // slots on one file cannot share one -- the API refuses such a
     // layout. Naming is inline on the box now rather than in a dialog,
     // so the check lives there.
-    const { TemplateEditor } = await import('../src/features/template/TemplateEditor')
+    const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
     const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
     await placeSlot(container, 'Date')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chooseStep } from '@/features/editor/canvas/rulerTicks'
+import { chooseStep } from '@/modules/pdf-editor/components/canvas/rulerTicks'
 
 describe('chooseStep', () => {
   it('picks the smallest 1-2-5 step whose labels are at least the minimum apart on screen', () => {

@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useDevicePixelRatio } from '@/features/editor/canvas/useDevicePixelRatio'
+import { useDevicePixelRatio } from '@/modules/pdf-editor/components/canvas/useDevicePixelRatio'
 
 /**
  * PageCanvas sizes its backing store from devicePixelRatio. That value

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { copyName } from '@/features/template/copyName'
+import { copyName } from '@/modules/pdf-editor/lib/copy-name'
 
 /**
  * Duplicating "six" repeatedly must read six copy, six copy (2), six copy

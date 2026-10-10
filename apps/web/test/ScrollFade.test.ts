@@ -1,7 +1,7 @@
 import { createElement, useState } from 'react'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ScrollFade } from '@/components/scroll-fade'
+import { ScrollFade } from '@/app/components/scroll-fade'
 
 describe('ScrollFade', () => {
   afterEach(() => cleanup())

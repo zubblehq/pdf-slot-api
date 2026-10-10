@@ -10,12 +10,12 @@ const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body
 
 describe('HttpTemplateStore', () => {
   const fetchMock = vi.fn<typeof fetch>()
-  let createHttpTemplateStore: typeof import('@/lib/persistence/httpTemplateStore')['createHttpTemplateStore']
+  let createHttpTemplateStore: typeof import('@/modules/pdf-editor/api/persistence/httpTemplateStore')['createHttpTemplateStore']
   beforeEach(async () => {
     // The "unreachable" warning latches once per module instance, so each test gets a fresh
     // module: what one test provokes must not decide what the next one can observe.
     vi.resetModules()
-    ;({ createHttpTemplateStore } = await import('@/lib/persistence/httpTemplateStore'))
+    ;({ createHttpTemplateStore } = await import('@/modules/pdf-editor/api/persistence/httpTemplateStore'))
     vi.stubGlobal('fetch', fetchMock)
     fetchMock.mockReset()
     toast.warning.mockClear()

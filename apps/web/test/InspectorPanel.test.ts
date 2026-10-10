@@ -2,8 +2,8 @@ import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Slot } from '@pdf-slot/core'
-import { InspectorPanel } from '@/features/editor/panels/InspectorPanel'
-import { COLOR_SWATCHES } from '@/features/editor/panels/ColorField'
+import { InspectorPanel } from '@/modules/pdf-editor/components/panels/InspectorPanel'
+import { COLOR_SWATCHES } from '@/modules/pdf-editor/components/panels/ColorField'
 
 const slot: Slot = {
   id: 's1', page: 0, x: 10, y: 700, width: 200, text: '', fontId: 'sans', size: 14,

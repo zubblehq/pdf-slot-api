@@ -61,7 +61,7 @@ describe('PageCanvas painting', () => {
   })
 
   it('paints offscreen and copies the finished page across in one step', async () => {
-    const { PageCanvas } = await import('../src/features/editor/canvas/PageCanvas')
+    const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
     const onRendered = vi.fn()
     const bytes = new Uint8Array([1, 2, 3])
 
@@ -93,7 +93,7 @@ describe('PageCanvas painting', () => {
   it('paints the backing store at screenScale x dpr, but only once the scale has held still', async () => {
     vi.useFakeTimers()
     try {
-      const { PageCanvas } = await import('../src/features/editor/canvas/PageCanvas')
+      const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
       const getViewport = vi.fn(({ scale }: { scale: number }) => ({ width: 100 * scale, height: 100 * scale }))
       getDocumentMock.mockImplementation(() => ({
         promise: Promise.resolve({
@@ -135,7 +135,7 @@ describe('PageCanvas painting', () => {
   })
 
   it('reports a click in stage px: screen distance from the page corner over the screen scale', async () => {
-    const { PageCanvas } = await import('../src/features/editor/canvas/PageCanvas')
+    const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
     const onCanvasClick = vi.fn()
     const { container } = render(
       createElement(PageCanvas, { bytes: new Uint8Array([1]), showing: 'document', pageIndex: 0, screenScale: 2, onCanvasClick }),

@@ -37,7 +37,7 @@ vi.mock('@pdf-slot/core', async (importOriginal) => {
   }
 })
 
-vi.mock('../src/lib/fonts/loadFonts', () => ({
+vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => Promise.resolve({}),
 }))
 
@@ -81,10 +81,10 @@ describe('createSlotCommands wired to a real store + real useCommitRender + real
   // exists to catch a real timing bug, not to be flaky about test-runner
   // scheduling.
   it('changing the font family in the inspector renders the NEW fontId, not the pre-edit one', async () => {
-    const { useEditorStore } = await import('../src/features/editor/state/useEditorStore')
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
-    const { createSlotCommands } = await import('../src/features/editor/pipeline/slotCommands')
-    const { InspectorPanel } = await import('../src/features/editor/panels/InspectorPanel')
+    const { useEditorStore } = await import('@/modules/pdf-editor/hooks/use-editor-store')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
+    const { createSlotCommands } = await import('@/modules/pdf-editor/lib/slot-commands')
+    const { InspectorPanel } = await import('@/modules/pdf-editor/components/panels/InspectorPanel')
 
     const doc = makeDoc()
     const slot = makeSlot()
@@ -143,10 +143,10 @@ describe('createSlotCommands wired to a real store + real useCommitRender + real
   }, 20000)
 
   it('removing a slot from the panel never lets its text reappear from a stale render', async () => {
-    const { useEditorStore } = await import('../src/features/editor/state/useEditorStore')
-    const { useCommitRender } = await import('../src/features/editor/pipeline/useCommitRender')
-    const { createSlotCommands } = await import('../src/features/editor/pipeline/slotCommands')
-    const { SlotsPanel } = await import('../src/features/editor/panels/SlotsPanel')
+    const { useEditorStore } = await import('@/modules/pdf-editor/hooks/use-editor-store')
+    const { useCommitRender } = await import('@/modules/pdf-editor/hooks/use-commit-render')
+    const { createSlotCommands } = await import('@/modules/pdf-editor/lib/slot-commands')
+    const { SlotsPanel } = await import('@/modules/pdf-editor/components/panels/SlotsPanel')
 
     const doc = makeDoc()
     const slot = makeSlot()
