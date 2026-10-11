@@ -17,15 +17,25 @@ export function SlotNameEditor({
   naming,
   typography,
   px,
-  onKeyDown,
 }: {
   slot: Slot
   naming: SlotNaming
   /** The slot's own type styling, so the name is shown as the text will be. */
   typography: CSSProperties
   px(screen: number): number
-  onKeyDown(event: KeyboardEvent<HTMLInputElement>): void
 }) {
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      // A name already in use is not committed: Enter does nothing until it
+      // is changed, which is what the note under the box is saying.
+      if (!naming.taken) naming.onCommit()
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      naming.onCancel()
+    }
+  }
+
   return (
     <>
       <Input
