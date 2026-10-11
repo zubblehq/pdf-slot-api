@@ -2,8 +2,7 @@
 
 Thanks for the answers on Azure. They settled most of it. The UI is now a
 React app and I'm reshaping it into an `elli-ui` module. Below is where it
-stands, then eight things I need from you or your team — **1 and 2 are the
-only ones blocking me.**
+stands, then eight things — **only 1 actually blocks me.**
 
 ## Where it stands
 
@@ -44,23 +43,21 @@ publish step in `elli-devops`. If you'd rather do it another way, tell me
 which — any single-source approach works. Two copies is the one option I'd
 push back on.
 
-## 2. The canvas needs an exemption from the inline-styles rule **(blocking)**
+## 2. Inline styles in the canvas — a note, not a request
 
-Your frontend rules say don't write `style={{ ... }}`, use Tailwind classes, so
-colours and spacing come from the design system. Right rule, and I've followed
-it everywhere else.
+Your frontend rules say don't write `style={{ ... }}`, use Tailwind classes.
+The editor canvas can't follow that: it has to say "this text box sits 237.4
+pixels from the left", a number worked out at runtime from the zoom and the
+box's position in the PDF, and there is no class for a computed number.
 
-It can't apply to the editor canvas. The canvas has to say "this text box sits
-237.4 pixels from the left" — a number worked out at runtime from the zoom and
-the box's position in the PDF. Tailwind has no class for a computed number.
-There are 26 of these, all in the canvas, all positioning.
+I was going to ask you to grant an exemption. Then I checked your codebase and
+found you already do exactly this, for exactly the same reason — your
+virtualised email list and your custom scrollbar use
+`style={{ transform: translateY(...) }}` and `style={{ top: metrics.top }}`.
+You have 26 of them in `src/modules` and 34 in `src/app`. We have 26.
 
-It's a documented convention rather than an ESLint rule, so it won't fail your
-build — but a reviewer will rightly ask. The files already open with a comment
-explaining it.
-
-**What I need:** your team to agree the canvas folder is understood to be
-exempt, so it's settled once rather than argued per file.
+So there's nothing to decide. Flagging it only so a reviewer doesn't query it
+cold.
 
 ## 3. Which test runner should this module use?
 
@@ -131,6 +128,6 @@ Flagging it only so nobody thinks the rule was ignored.
 
 ---
 
-**Summary:** 1 and 2 block me. 3 and 4 I can work around either way but the
-answer changes how much work the move is. 5, 6 and 7 are needed before the
-backend moves. 8 is just a note.
+**Summary:** only **1** blocks me. 3 and 4 I can work around either way, but
+the answer changes how much work the move is. 5, 6 and 7 are needed before the
+backend moves. 2 and 8 are notes, nothing needed.

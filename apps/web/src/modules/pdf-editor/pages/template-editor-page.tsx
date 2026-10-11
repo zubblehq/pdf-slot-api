@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { cellName, recordToValues, tableIdOfCell, tableStyle, toLayout, toSlots, toValues, type DataRecord, type Point, type Slot, type TableStyle } from '@pdf-slot/core'
+import { cellName, recordToValues, tableIdOfCell, tableStyle, toSlots, type DataRecord, type Point, type Slot, type TableStyle } from '@pdf-slot/core'
 import { apiUrl } from '@/modules/pdf-editor/api/persistence'
 import type { SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
 import { Editor, type NamingState } from '@/modules/pdf-editor/pages/editor-page'
+import { useDocumentView } from '@/modules/pdf-editor/hooks/use-document-view'
 import { useEditorPipeline } from '@/modules/pdf-editor/hooks/use-editor-pipeline'
 import { useEditorStore } from '@/modules/pdf-editor/hooks/use-editor-store'
 import type { PasteTarget } from '@/modules/pdf-editor/hooks/use-slot-clipboard'
@@ -124,45 +125,13 @@ export function TemplateEditor({
     void store.put({ fileId })
   }, [fileId, store])
 
-  // The slot names the generate panel checks a data file's columns
-  // against. Memoised because it is the panel's memo key: a fresh array
-  // every render would re-parse the pasted rows each time.
-  const slotNames = useMemo(() => Object.values(names), [names])
-
-  /**
-   * The names of the boxes that have something typed into them, as a data
-   * file would have to name them: a plain slot by its own name, a table by
-   * the table's. What the generate panel offers to print on every PDF when
-   * the data file says nothing about them.
-   */
-  const filledIn = useMemo(() => {
-    const filled = new Set<string>()
-    for (const slot of editor.slots) if (slot.text.trim() !== '') filled.add(names[slot.id] ?? slot.id)
-    for (const cell of tables.cells) {
-      if (cell.text.trim() === '') continue
-      const table = tables.tableOf(cell.id)
-      if (table) filled.add(table.name)
-    }
-    return [...filled]
-  }, [editor.slots, tables, names])
-
-  // What a data file can fill: the named boxes, and the named tables with
-  // the columns and the number of ruled lines each one has.
-  const fillTargets = useMemo(() => ({
-    slotNames,
-    tables: tables.tables.map((table) => ({
-      name: table.name,
-      columns: table.columns.map((column) => column.name),
-      rowCount: table.rowHeights.length,
-    })),
-  }), [slotNames, tables.tables])
-
-  // Debounced safety-net writes of both records; Save writes at once.
-  const currentLayout = useMemo(
-    () => toLayout(fileId, editor.slots, names, new Date().toISOString(), tables.tables),
-    [fileId, editor.slots, names, tables.tables],
-  )
-  const currentValues = useMemo(() => toValues(fileId, allSlots, new Date().toISOString()), [fileId, allSlots])
+  const { filledIn, fillTargets, currentLayout, currentValues } = useDocumentView({
+    fileId,
+    slots: editor.slots,
+    allSlots,
+    names,
+    tables,
+  })
 
   /**
    * Pours one record of a data file into the boxes on the page, so what a
