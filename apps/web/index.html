@@ -1,10 +1,11 @@
 <!doctype html>
 <!--
-  `dark` is the editor's theme (see src/styles/globals.css's `.dark` block): a
-  neutral Figma-like palette. Set statically in the markup -- there is no
-  switcher -- so the first paint is already dark and nothing flashes.
+  No theme class here. The editor follows the viewer's preference
+  (src/app/theme/useSystemTheme.ts) rather than being fixed dark, so that it
+  behaves the way it will inside elli-ui, where their switcher sets this class
+  and there are four themes rather than two.
 -->
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

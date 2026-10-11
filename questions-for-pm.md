@@ -59,29 +59,53 @@ You have 26 of them in `src/modules` and 34 in `src/app`. We have 26.
 So there's nothing to decide. Flagging it only so a reviewer doesn't query it
 cold.
 
-## 3. Which test runner should this module use?
+## 2b. A suggestion: make the 200-line rule enforceable, or restate it
 
-`elli-ui` runs `bun:test`. The editor's 395 tests are on Vitest. They are not
-interchangeable: 32 files use helpers (`vi.stubGlobal` in particular) that
-`bun:test` has no equivalent for, so this is a real conversion, not a rename.
+Related, and offered as a suggestion rather than a complaint — I spent real
+effort complying with the 200-line rule before I thought to measure it.
 
-Those tests are also the only reason I can prove this port changed nothing —
-they check glyph positions to six decimal places.
+**139 of your 634 components are over 200 lines — 21%.** Nine are over 900.
+The largest are `email-agent-panel.tsx` at 3,813, `mailbox-page.tsx` at 2,391
+and `rfq-detail.tsx` at 2,315. So the rule is documented but not held, which
+makes it hard for someone new to know what is actually expected.
 
-**What I need:** either your team accepts Vitest for this one module (it can
-run alongside `bun:test`), or you want the conversion done — in which case
-I'd like it treated as its own piece of work, not folded into the move.
+ESLint can enforce it, and the knobs matter:
 
-## 4. Should the editor follow your themes, or stay dark?
+```js
+'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+'max-lines-per-function': ['warn', { max: 150, skipComments: true }],
+```
 
-You have four themes, and your rule is that every colour is defined in all
-four. The editor is currently fixed dark — deliberately, the way Figma and
-most design tools are, so the page being edited stands out against its
-surroundings.
+Two things worth knowing. **ESLint's own defaults are 300 per file and 50 per
+function** — 200 is stricter than the tool's reference point. And
+`skipComments` is the option that matters most here: without it, a file is
+penalised for explaining itself. One of ours was 258 lines of which 101 were
+the documented props contract; counting comments would have pushed me to
+delete the explanations to hit the number, which is the opposite of the point.
 
-**What I need:** a decision. Following your themes is more work and means the
-editor looks different per theme; staying dark means one area of the app that
-doesn't follow the switcher. Either is fine by me — it's a product call.
+My suggestion: pick the number you actually want, turn it on with
+`skipComments`, and fix the stragglers over time — or lower the documented
+number to something the codebase reflects. Either beats a rule that only new
+contributors follow. Happy to leave it alone entirely; it's your codebase.
+
+## 3. Test runner — we'll use `bun:test`
+
+Decided: the module will use `bun:test`, matching the rest of `elli-ui`, so
+there's one way to run tests in your repo rather than two.
+
+Worth knowing what it costs, since it is not a rename: 32 of the editor's test
+files use Vitest helpers that `bun:test` has no equivalent for —
+`vi.stubGlobal` in particular — so this is a real conversion of about 395
+tests. Those tests are also the only reason I can prove the port changed
+nothing, since they check glyph positions to six decimal places. I'll convert
+them rather than drop coverage, and I'd rather it be visibly its own piece of
+work than hidden inside the move.
+
+## 4. Theme — the editor will follow yours
+
+Decided: the editor adopts your four themes rather than staying fixed dark.
+Every colour will come from your tokens, defined in all four theme files, so
+the editor follows the switcher like the rest of the app.
 
 ## 5. Which repo owns the backend?
 
@@ -128,6 +152,6 @@ Flagging it only so nobody thinks the rule was ignored.
 
 ---
 
-**Summary:** only **1** blocks me. 3 and 4 I can work around either way, but
-the answer changes how much work the move is. 5, 6 and 7 are needed before the
-backend moves. 2 and 8 are notes, nothing needed.
+**Summary:** only **1** blocks me. 3 and 4 are decided on our side and
+underway. 5, 6 and 7 are needed before the backend moves. 2, 2b and 8 are
+notes — 2b is a suggestion about your own lint config, take it or leave it.

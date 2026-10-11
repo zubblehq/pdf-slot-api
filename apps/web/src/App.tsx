@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Toaster } from '@/app/components/ui/sonner'
+import { useSystemTheme } from '@/app/theme/useSystemTheme'
 import { Dropzone, type UploadedFile } from '@/modules/pdf-editor/components/upload/Dropzone'
 import { SavedFiles } from '@/modules/pdf-editor/components/files/SavedFiles'
 import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
@@ -24,14 +25,14 @@ const TemplateEditor = lazy(() =>
 const loadPdfTools = () => import('@/modules/pdf-editor/lib/open-file')
 
 /**
- * Toasts, with the theme stated rather than detected.
+ * Toasts, told the theme rather than detecting it.
  *
- * `layout.tsx` rendered this once around every page. There is no theme
- * switcher -- `index.html` sets `dark` on `<html>` -- so sonner's own
- * `useTheme` would report "system" and could disagree with the page.
+ * sonner reads a theme provider, and there is none here -- the class on
+ * `<html>` is the whole mechanism -- so it is passed the resolved value
+ * instead. Inside elli-ui this becomes their provider's value.
  */
-function Notifications() {
-  return <Toaster theme="dark" position="top-center" />
+function Notifications({ theme }: { theme: 'light' | 'dark' }) {
+  return <Toaster theme={theme} position="top-center" />
 }
 
 /** Shown only for as long as the editor chunk takes to arrive. */
@@ -44,6 +45,7 @@ function EditorLoading() {
 }
 
 export function App() {
+  const theme = useSystemTheme()
   const [opened, setOpened] = useState<OpenedFile | null>(null)
   // Nothing renders until the restore has been attempted, so a saved
   // session never flashes the dropzone before landing in the editor.
@@ -128,7 +130,7 @@ export function App() {
             onStartOver={() => setOpened(null)}
           />
         </Suspense>
-        <Notifications />
+        <Notifications theme={theme} />
       </>
     )
   }
@@ -147,7 +149,7 @@ export function App() {
           </div>
         </div>
       </main>
-      <Notifications />
+      <Notifications theme={theme} />
     </>
   )
 }
