@@ -1,8 +1,18 @@
 # api
 
-The backend for the PDF text-slot editor: a Hono app on Nitro, storing files/layouts/jobs in
-Postgres, source and generated PDFs in Blob storage, and running bulk generation as a durable
-[Workflow](https://useworkflow.dev/).
+The backend for the PDF text-slot editor: a Hono app on Bun, storing
+files/layouts/jobs in Postgres, source and generated PDFs in Azure Blob
+storage, and running bulk generation through a [pg-boss](https://pgboss.io)
+queue in the same Postgres.
+
+It runs as its own service in a docker compose beside Elli's, with no public
+address: the browser talks to Elli's API, which calls in over the internal
+network. See *Deploying*.
+
+> It used to be a Nitro app on Vercel, with generation as a durable Workflow.
+> That is gone, not configurable -- Workflow needs a platform to hold a
+> function between its steps, and a VM has a process that stays up instead.
+> The deployment on Vercel still exists on `main` until someone cuts over.
 
 ## Running locally
 
@@ -15,27 +25,38 @@ Then, from `apps/api`:
 
 ```bash
 cp .env.example .env
-# edit .env: DATABASE_URL to the instance above; for local files instead of Vercel Blob,
-# set BLOB_DIR=.blobs and leave BLOB_READ_WRITE_TOKEN unset
+# edit .env: DATABASE_URL to the instance above; for local files instead of a
+# blob service, set BLOB_DIR=.blobs
 npm run db:migrate   # applies drizzle/*.sql -- needs DATABASE_URL in the environment
-npm run dev          # nitro dev, listens on :3000
+npm run dev          # bun --watch src/index.ts, listens on :3000
 curl localhost:3000/health   # -> {"ok":true}
 ```
 
-`npm run build` runs the same Nitro + Workflow compile used for deployment; run it before
-shipping to catch anything the production bundle would reject that `dev` does not.
+`scripts/dev-stack.sh` at the repository root does the Postgres, the
+migrations and the editor in one command.
+
+**There is no build step.** `@pdf-slot/core` ships TypeScript on purpose (see
+its README), Bun runs it directly, and adding a bundler here would exist only
+to undo that. `npm run typecheck` is the check the build used to be; run it
+before shipping.
 
 ### Environment variables
 
 | Variable                | Required                    | Purpose                                                          |
 | ------------------------ | ---------------------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL`           | always                       | Postgres connection string (Neon or any Postgres, over plain TCP via `pg`). |
-| `BLOB_READ_WRITE_TOKEN`  | unless `BLOB_DIR` is set     | Vercel Blob token for storing source PDFs, per-record PDFs and zips. |
-| `BLOB_DIR`               | instead of the token above   | Local, file-backed blob storage (a directory on disk) for development -- no Vercel Blob account needed. |
-| `API_KEY`                | always                       | Bearer token required to start a generation job (`POST /files/:id/jobs`). |
-| `WEB_ORIGIN`             | always                       | Origin allowed by CORS (the web app's URL). |
+| `DATABASE_URL`           | always                       | Postgres connection string. Also where the queue lives, in its own `pdf_jobs` schema. |
+| `AZURE_BLOB_SAS_URL`     | in production                | A container SAS URL. The bytes go to Azure, under `pdf/`. See *Azure Blob storage*. |
+| `BLOB_DIR`               | instead of the above         | Local, file-backed blob storage (a directory on disk), for development. |
+| `BLOB_READ_WRITE_TOKEN`  | only on Vercel               | Vercel Blob, used when neither of the two above is set. Nothing on the VM needs it. |
+| `API_KEY`                | always                       | Bearer token required to start a generation job (`POST /files/:id/jobs`). Now a service-to-service secret: the only caller is Elli's API. |
+| `WEB_ORIGIN`             | always                       | Origin allowed by CORS. Unused when no browser can reach this service, and still required so a deployment that *does* expose it cannot do so wide open. |
+| `CORE_VERSION`           | once two sides are deployed  | Which commit of `@pdf-slot/core` this image runs. A job whose client reports a different one is refused with `409`. Unset turns the check off. |
+| `ROLE`                   | no (`both`)                  | `api`, `worker` or `both`. Splitting them is this image twice with different roles. |
+| `PORT`                   | no (`3000`)                  | |
 
-A missing required variable is a startup error (`src/config.ts`), not a runtime surprise.
+A missing required variable is a startup error (`src/config.ts`), not a
+runtime surprise. So is setting `BLOB_DIR` **and** `AZURE_BLOB_SAS_URL`: one
+of them silently wins, and the loser's bytes are written where nobody looks.
 
 ### Fonts
 
@@ -43,34 +64,37 @@ The five TTFs the renderer embeds are compiled into the bundle as base64, from
 `@pdf-slot/core/fonts/embedded` (`packages/core/src/fonts/embedded.ts`, generated by `npm run
 fonts:embed`). `src/jobs/fonts.ts`'s `embeddedFontProvider()` decodes them once per process and
 hands out that same instance to every caller -- there is no file or asset lookup at runtime, so
-the same code path serves dev, tests, `nitro build`, and a Workflow step on Vercel, which sees
-neither the repository nor Nitro's asset storage. A test (`test/fonts.test.ts`) guards that the
-decoded bytes are byte-for-byte identical to the TTFs the editor ships.
+the same code path serves dev, tests and the container, none of which can be assumed to have the
+repository on disk. A test (`test/fonts.test.ts`) guards that the decoded bytes are byte-for-byte
+identical to the TTFs the editor ships.
 
 ## Limits
 
 Things a caller or operator should know that the code does not announce on its own:
 
-- **Uploads are capped at 4.5 MB.** `PUT /files/:id` runs as a Vercel Function, and the platform
-  rejects a request body over 4.5 MB with a `413` before the handler runs -- so the cap cannot be
-  raised in this code, and the `413` body is the platform's plain text, not our error envelope.
-  The web client recognises the status and tells the user the PDF is too large to save on the
-  server; editing and downloading still work, since neither needs the server. IndexedDB mode (the
-  web app without `NEXT_PUBLIC_API_URL`) has no such cap.
+- **The 4.5 MB upload cap was Vercel's, and is gone with it.** `PUT /files/:id` was a Vercel
+  Function and the platform rejected a body over 4.5 MB with a `413` before the handler ran. On
+  the VM nothing imposes that, so the limit is now whatever the reverse proxy in front of Elli's
+  API allows -- check `client_max_body_size` there before promising a number. The web client still
+  recognises a `413` and tells the user the PDF is too large to save, which is the right message
+  whoever sends it.
 - **`GET /jobs/:id` returns every item on every poll.** The response carries the full `items` array
   (one entry per record, up to `MAX_JOB_RECORDS` = 5000), not a delta. The web client polls it every
   two seconds while a job runs; that is fine at the current record limit, and paging or a `since`
   cursor is the change to make if the limit grows.
-- **Migrations are applied by hand, not at build.** The design spec had `drizzle-kit migrate` run as
-  the API's build step; in practice it is `npm run db:migrate` against the target `DATABASE_URL`
-  (see *Deploying*), run before the deploy that needs it. The build then never needs write access
-  to the production database, and a schema change stays an explicit, reviewable step rather than a
-  side effect of every deploy.
+- **Migrations are applied by hand, not at start-up.** `npm run db:migrate` against the target
+  `DATABASE_URL` (see *Deploying*), before the deploy that needs it. The container then never
+  needs DDL rights on a database it shares with Elli's own tables, and a schema change stays an
+  explicit, reviewable step rather than a side effect of every restart -- which matters more with
+  several containers, where they would all try at once.
+- **pg-boss creates its own schema at start-up, and that is not the same thing.** It owns
+  `pdf_jobs` entirely and migrates it itself. Our migrations never touch it.
 - **Only job creation is authenticated.** `POST /files/:id/jobs` requires the bearer `API_KEY`
   because it is the one endpoint that costs real compute. Every other route -- uploading, reading
-  and deleting files, layouts and values, reading job status and downloading a zip -- is open to any
-  caller allowed by CORS. That is the intended single-workspace model, not an oversight; a
-  multi-tenant deployment would need per-user auth on all of them.
+  and deleting files, layouts and values, reading job status and downloading a zip -- is open to
+  any caller that can reach the service. On the VM that is the internal network only, which is
+  why it is survivable; it is still a single-workspace model, and **anything that gave this
+  service a public address would need per-user auth on every route first.**
 
 ## Tests
 
@@ -85,13 +109,23 @@ and route code runs against PGlite as runs against real Postgres in production.
 
 ## Azure Blob storage
 
-`AZURE_BLOB_SAS_URL` -- a container SAS URL -- stores the bytes on Azure
-instead of Vercel Blob. The URL carries the account, the container, what
-the credential may do and until when, so nothing else is configured and
-no account key is held anywhere. The SAS needs `racwdl`: read, add,
-create, write, delete, list. A read-only one (`sp=r`) answers every
-upload with `403 AuthorizationPermissionMismatch`, and listing needs `l`
-on top of `r`.
+`AZURE_BLOB_SAS_URL` -- a container SAS URL -- stores the bytes on Azure. The
+URL carries the account, the container, what the credential may do and until
+when, so nothing else is configured and no account key is held anywhere. The
+SAS needs `racwdl`: read, add, create, write, delete, list. A read-only one
+(`sp=r`) answers every upload with `403 AuthorizationPermissionMismatch`, and
+listing needs `l` on top of `r`.
+
+**The container is shared with Elli's own files**, and a container SAS can
+write and delete anywhere inside it. So every path this service uses sits
+under `pdf/`, and the Azure store refuses one that does not -- see
+`src/blob/paths.ts`. A batch delete checks every path before it sends any, so
+a list that is part ours and part not deletes nothing rather than half of it.
+
+The SAS expires. Nothing renews it, and when it lapses every upload starts
+answering `403` -- so its expiry is a date somebody has to own. The PM's
+answer was to keep the SAS for now and move the whole storage account to the
+VM's managed identity later, in one go.
 
 ### Developing against it
 
@@ -109,22 +143,67 @@ The store is held to the same contract as the disk and memory ones (see
 `test/diskBlobStore.test.ts`), so nothing above `BlobStore` knows or
 cares which of the four it is talking to.
 
+## Bulk generation, and how it fails
+
+`POST /files/:id/jobs` writes the job rows, puts the id on the queue and
+answers `202`. A worker picks it up, renders a PDF per record in batches, zips
+them, and the editor polls `GET /jobs/:id`. Minutes of CPU for a few hundred
+records, which is why none of it happens in the request.
+
+- **A retry re-runs the whole job**, not the step that failed -- pg-boss
+  retries handlers, not steps. That is affordable because `renderBatch` skips
+  records already marked `done`, so an attempt picks up roughly where the last
+  one stopped.
+- **Three attempts, 15s apart with backoff.** `src/jobs/queue.ts`.
+- **A failure a retry cannot help is not retried.** A deleted file, a layout
+  that is gone, a character no font can draw: `FatalJobError`, which marks the
+  job failed and routes the queued job to the dead-letter queue instead of
+  spending two more full renders reaching the same answer.
+- **The last attempt knows it is the last**, so a transient failure that never
+  resolves still ends with the row saying `failed` rather than sitting at
+  `running` while the editor polls it for ever.
+- `pdf-generate-failed` is the dead-letter queue. Nothing reads it; it is
+  where a job is when the row and the queue disagree, which is exactly when
+  you want it.
+
+The queue has its own tests (`test/queue.test.ts`) against a real Postgres --
+skipped when there is not one, since PGlite cannot stand in for a server a
+worker polls.
+
 ## Deploying
 
-From `apps/api`:
+Its own docker compose, joined to Elli's network, with no published ports:
+the browser never reaches this service, Elli's API does.
 
 ```bash
-vercel link                        # new project "pdf-slot-api", root dir apps/api, framework Nitro
-vercel integration add neon        # provisions Postgres, injects DATABASE_URL
-vercel blob store add pdf-slot-files   # injects BLOB_READ_WRITE_TOKEN
-vercel env add API_KEY production
-vercel env add WEB_ORIGIN production   # e.g. https://pdf-slot-design.vercel.app
-
-vercel env pull .env.production.local
-DATABASE_URL=... npm run db:migrate    # run migrations against the production database
-
-vercel deploy --prod --archive=tgz
+# from the repository root
+docker compose -f apps/api/docker-compose.yml up -d --build
 ```
 
-Then, on the web project: `vercel env add NEXT_PUBLIC_API_URL production` set to the API's
-deployed URL, and redeploy web.
+It needs, in the compose environment or `.env`:
+
+| Variable | What |
+| --- | --- |
+| `PDF_DATABASE_URL` | the VM's Postgres -- the `db` service in elli-core's compose |
+| `PDF_AZURE_BLOB_SAS_URL` | the container SAS |
+| `PDF_API_KEY` | the bearer token Elli's API will send |
+| `PDF_CORE_VERSION` | the commit of core this image runs (once the editor is deployed separately) |
+
+Migrations are a separate, deliberate step, run before the deploy that needs
+them:
+
+```bash
+DATABASE_URL=<the VM's Postgres> npm run db:migrate
+```
+
+Then point Elli's API at it: `PDF_ENGINE_URL=http://pdf-slot-api:3000` in
+elli-core's compose, which is the variable their file already carries and
+documents for exactly this.
+
+### What still has to happen on Elli's side
+
+This service has no public address by design, so **the browser cannot reach it
+until elli-core proxies to it.** The editor module in `elli-ui` ships working
+on browser storage alone and does not offer bulk generation; it starts
+offering it when `VITE_PDF_API_URL` points at a path Elli's API serves. Those
+routes do not exist yet.
