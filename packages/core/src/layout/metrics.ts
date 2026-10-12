@@ -6,7 +6,6 @@
 // packages/core/test/metrics-characterization.test.ts for the measured
 // kerning finding this module encodes.
 import * as fontkit from 'fontkit'
-import type { Font, FontCollection } from 'fontkit'
 import type { FontId } from '../fonts/registry'
 
 // @types/fontkit declares create()'s first parameter as Node's `Buffer`.
@@ -17,13 +16,16 @@ import type { FontId } from '../fonts/registry'
 // Buffer-specific method (write/toJSON/equals/compare/...). fontkit also
 // ships separate `node` and browser/`module` entry points specifically so
 // it runs without a real Node `Buffer` global, which this package's callers
-// require: createFontMetrics() below is called from browser-only code
-// (Task 15's SlotLines.tsx, in its render path), where `Buffer` does not
-// exist and Next.js does not polyfill it. This overload tells the compiler
-// the truth -- create() also accepts a plain Uint8Array -- instead of
-// forcing a `Buffer.from()` conversion that would crash there, or an
-// `as any`/`as unknown as Buffer` cast that would silence the checker
-// instead of correcting it.
+// require: createFontMetrics() below is called from browser-only code (the
+// editor's slot-lines.tsx, in its render path), where `Buffer` does not exist
+// and no bundler polyfills it. This overload tells the compiler the truth --
+// create() also accepts a plain Uint8Array -- instead of forcing a
+// `Buffer.from()` conversion that would crash there, or an
+// `as any`/`as unknown as Buffer` cast that would silence the checker instead
+// of correcting it.
+//
+// `Font` and `FontCollection` resolve to fontkit's own declarations inside
+// this block, so they are deliberately not imported above.
 declare module 'fontkit' {
   export function create(buffer: Uint8Array, postscriptName?: string): Font | FontCollection
 }

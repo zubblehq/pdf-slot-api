@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defaultTableName, uniqueTableName } from '../index.js'
-import type { FileId, PageSize, StoredFile, StoredTable, TableStyle, TemplateLayout, TemplateSlot, TemplateValues } from '../index.js'
+import type { FileId, StoredFile, StoredTable, TableStyle, TemplateLayout, TemplateSlot, TemplateValues } from '../index.js'
 
 /**
  * Request/response shapes shared by the API and the web client -- one source
