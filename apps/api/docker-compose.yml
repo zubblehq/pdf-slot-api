@@ -42,6 +42,9 @@ services:
       # written somewhere nobody is looking. Only for a deployment with no
       # container yet; it is a named volume, since a template's source PDF is
       # not a cache.
+      # If set, it must be the path below: the image prepares that one
+      # directory with the right owner, and a volume mounted anywhere else
+      # arrives owned by root with a non-root service that cannot write to it.
       BLOB_DIR: ${PDF_BLOB_DIR:-}
       # Service to service now, not a browser secret: the only caller is
       # Elli's API, which holds this and sends it as a bearer token.

@@ -55,8 +55,15 @@ COPY apps/api/scripts ./apps/api/scripts
 
 WORKDIR /app/apps/api
 
-# Not root. Bun's image ships a `bun` user; the service writes nothing to
-# disk (blobs go to Azure, state to Postgres), so it needs nothing it owns.
+# The one directory the service may write to, prepared with the right owner
+# *before* anything is mounted over it. Docker gives a new named volume the
+# ownership of the image's directory underneath it -- without this the volume
+# arrives owned by root, the non-root user below cannot create `pdf/` inside
+# it, and every upload fails with EACCES. Only used when BLOB_DIR points here;
+# with Azure nothing is written to disk at all.
+RUN mkdir -p /var/lib/pdf-slot/blobs && chown -R bun:bun /var/lib/pdf-slot
+
+# Not root. Bun's image ships a `bun` user.
 USER bun
 
 # What the compose healthcheck and Elli's API should both ask.
