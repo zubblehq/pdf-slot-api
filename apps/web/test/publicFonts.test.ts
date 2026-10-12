@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test } from 'bun:test'
 import { FONT_FILES, FONT_IDS } from '@pdf-slot/core'
 
 /**
@@ -26,7 +26,7 @@ const coreDir = path.resolve(__dirname, '../../../packages/core/src/fonts/files'
 const webDir = path.resolve(__dirname, '../public/fonts')
 
 describe('the fonts the browser fetches are the fonts the renderer embeds', () => {
-  test.each(FONT_IDS)('%s is byte-identical in both directories', (id) => {
+  test.each([...FONT_IDS])('%s is byte-identical in both directories', (id) => {
     const file = FONT_FILES[id]
     const served = readFileSync(path.join(webDir, file))
     const embedded = readFileSync(path.join(coreDir, file))

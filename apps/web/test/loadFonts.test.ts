@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test'
 import { FONT_CSS_FAMILY, FONT_FILES, FONT_IDS } from '@pdf-slot/core'
+import { forgetLoadedFonts } from '@/modules/pdf-editor/lib/fonts/loadFonts'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * jsdom does not implement the CSS Font Loading API (`FontFace`,
@@ -26,25 +28,26 @@ function makeResponse(ok: boolean, bytes: Uint8Array = new Uint8Array([1, 2, 3, 
 }
 
 describe('loadFonts', () => {
-  let fontsAdd: ReturnType<typeof vi.fn>
+  let fontsAdd: ReturnType<typeof jest.fn>
 
   beforeEach(() => {
-    // The module memoises `cache` at module scope; reset the module
-    // registry so each test starts with a clean, un-memoised loader.
-    vi.resetModules()
-    fontsAdd = vi.fn()
-    vi.stubGlobal('FontFace', FakeFontFace)
-    vi.stubGlobal('document', { fonts: { add: fontsAdd } })
+    // The module memoises `cache` at module scope, and bun:test has no
+    // module-registry reset, so the loader is asked to forget instead.
+    // The dynamic imports below then get a clean, un-memoised loader.
+    forgetLoadedFonts()
+    fontsAdd = jest.fn()
+    stubGlobal('FontFace', FakeFontFace)
+    stubGlobal('document', { fonts: { add: fontsAdd } })
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('fetches all five ids and returns non-empty bytes for each', async () => {
-    const fetchMock = vi.fn(async () => makeResponse(true))
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = jest.fn(async () => makeResponse(true))
+    stubGlobal('fetch', fetchMock)
 
     const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     const bytes = await loadFontBytes()
@@ -58,8 +61,8 @@ describe('loadFonts', () => {
   })
 
   it('registerFontFaces adds one face per id, named per FONT_CSS_FAMILY', async () => {
-    const fetchMock = vi.fn(async () => makeResponse(true))
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = jest.fn(async () => makeResponse(true))
+    stubGlobal('fetch', fetchMock)
 
     const { loadFontBytes, registerFontFaces } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     const bytes = await loadFontBytes()
@@ -73,8 +76,8 @@ describe('loadFonts', () => {
   })
 
   it('a failed fetch surfaces a useful error naming which font failed', async () => {
-    const fetchMock = vi.fn(async (url: string) => makeResponse(!url.endsWith(FONT_FILES.mono)))
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = jest.fn(async (url: string) => makeResponse(!url.endsWith(FONT_FILES.mono)))
+    stubGlobal('fetch', fetchMock)
 
     const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
     await expect(loadFontBytes()).rejects.toThrow('Failed to load font mono')
@@ -85,8 +88,8 @@ describe('loadFonts', () => {
     // so the outcome does not depend on the scheduling order of the five
     // concurrent fetches within a single loadFontBytes() call.
     let batch: 'fail' | 'succeed' = 'fail'
-    const fetchMock = vi.fn(async () => makeResponse(batch === 'succeed'))
-    vi.stubGlobal('fetch', fetchMock)
+    const fetchMock = jest.fn(async () => makeResponse(batch === 'succeed'))
+    stubGlobal('fetch', fetchMock)
 
     const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/loadFonts')
 

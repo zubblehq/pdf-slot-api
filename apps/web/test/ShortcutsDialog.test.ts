@@ -1,13 +1,13 @@
 import { createElement } from 'react'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import { ShortcutsDialog, SHORTCUTS_KEY } from '@/modules/pdf-editor/components/panels/ShortcutsDialog'
 
 describe('ShortcutsDialog', () => {
   afterEach(() => cleanup())
 
   it('lists the commands with what each one does, not just the keys', async () => {
-    render(createElement(ShortcutsDialog, { open: true, onOpenChange: vi.fn() }))
+    render(createElement(ShortcutsDialog, { open: true, onOpenChange: jest.fn() }))
     const dialog = await waitFor(() => screen.getByTestId('shortcuts-dialog'))
 
     // Grouped, and every line says what the keys are for.
@@ -25,7 +25,7 @@ describe('ShortcutsDialog', () => {
   })
 
   it('shows nothing until it is opened', () => {
-    render(createElement(ShortcutsDialog, { open: false, onOpenChange: vi.fn() }))
+    render(createElement(ShortcutsDialog, { open: false, onOpenChange: jest.fn() }))
     expect(screen.queryByTestId('shortcuts-dialog')).toBeNull()
   })
 })

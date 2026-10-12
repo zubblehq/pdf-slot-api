@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest, spyOn } from 'bun:test'
 import { decodeImage } from '@/modules/pdf-editor/components/upload/decodeImage'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * jsdom implements neither `createImageBitmap` (undefined globally) nor a
@@ -12,26 +13,26 @@ import { decodeImage } from '@/modules/pdf-editor/components/upload/decodeImage'
  */
 
 function stubToBlob(blob: Blob | null) {
-  return vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+  return spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
     callback(blob)
   })
 }
 
 afterEach(() => {
-  vi.restoreAllMocks()
-  vi.unstubAllGlobals()
+  jest.restoreAllMocks()
+  unstubAllGlobals()
 })
 
 describe('decodeImage', () => {
   it('draws the decoded bitmap onto a canvas sized to it, and returns its PNG bytes', async () => {
-    const bitmap = { width: 40, height: 20, close: vi.fn() }
-    vi.stubGlobal(
+    const bitmap = { width: 40, height: 20, close: jest.fn() }
+    stubGlobal(
       'createImageBitmap',
-      vi.fn(async () => bitmap),
+      jest.fn(async () => bitmap),
     )
 
-    const drawImage = vi.fn()
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    const drawImage = jest.fn()
+    spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
     } as unknown as CanvasRenderingContext2D)
 
@@ -53,9 +54,9 @@ describe('decodeImage', () => {
   })
 
   it('rejects with a clear message when the browser cannot decode the format', async () => {
-    vi.stubGlobal(
+    stubGlobal(
       'createImageBitmap',
-      vi.fn(async () => {
+      jest.fn(async () => {
         throw new Error('unsupported')
       }),
     )
@@ -67,10 +68,10 @@ describe('decodeImage', () => {
   })
 
   it('rejects when a 2d canvas context is unavailable, and still releases the bitmap', async () => {
-    const bitmap = { width: 1, height: 1, close: vi.fn() }
-    vi.stubGlobal(
+    const bitmap = { width: 1, height: 1, close: jest.fn() }
+    stubGlobal(
       'createImageBitmap',
-      vi.fn(async () => bitmap),
+      jest.fn(async () => bitmap),
     )
     // Not mocked: jsdom's own getContext('2d') already returns null.
 
@@ -86,13 +87,13 @@ describe('decodeImage', () => {
   })
 
   it('rejects when the canvas cannot produce a blob, and still releases the bitmap', async () => {
-    const bitmap = { width: 1, height: 1, close: vi.fn() }
-    vi.stubGlobal(
+    const bitmap = { width: 1, height: 1, close: jest.fn() }
+    stubGlobal(
       'createImageBitmap',
-      vi.fn(async () => bitmap),
+      jest.fn(async () => bitmap),
     )
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: vi.fn(),
+    spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: jest.fn(),
     } as unknown as CanvasRenderingContext2D)
     stubToBlob(null)
 

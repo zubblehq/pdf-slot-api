@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'bun:test'
 import { tableFromStored, tableHeight, tableWidth, toScreenLength, toScreenPoint } from '@pdf-slot/core'
 import type { TemplateTable, Viewport } from '@pdf-slot/core'
 import { TableOverlay } from '@/modules/pdf-editor/components/table/TableOverlay'

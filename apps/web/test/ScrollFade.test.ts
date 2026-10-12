@@ -1,6 +1,6 @@
 import { createElement, useState } from 'react'
 import { act, cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, spyOn } from 'bun:test'
 import { ScrollFade } from '@/app/components/scroll-fade'
 
 describe('ScrollFade', () => {
@@ -11,7 +11,7 @@ describe('ScrollFade', () => {
     // render -- and it set state. Effect, state, render, effect: a loop
     // React only stops by throwing "maximum update depth exceeded",
     // which it did as soon as anything else kept the tree busy.
-    const add = vi.spyOn(Element.prototype, 'addEventListener')
+    const add = spyOn(Element.prototype, 'addEventListener')
     let bump = () => {}
     function Parent() {
       const [n, setN] = useState(0)

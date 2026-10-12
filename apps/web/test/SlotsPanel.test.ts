@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import { SlotsPanel, type PanelSlot } from '@/modules/pdf-editor/components/panels/SlotsPanel'
 
 const slots: PanelSlot[] = [
@@ -16,14 +16,14 @@ function renderPanel(extra: Partial<Parameters<typeof SlotsPanel>[0]> = {}) {
     pageIndex: 0,
     pageCount: 1,
     locked: false,
-    onLockedChange: vi.fn(),
-    onPageChange: vi.fn(),
-    onSelect: vi.fn(),
-    onRename: vi.fn(),
-    onRemove: vi.fn(),
-    onDuplicate: vi.fn(),
-    onChangeText: vi.fn(),
-    onStartOver: vi.fn(),
+    onLockedChange: jest.fn(),
+    onPageChange: jest.fn(),
+    onSelect: jest.fn(),
+    onRename: jest.fn(),
+    onRemove: jest.fn(),
+    onDuplicate: jest.fn(),
+    onChangeText: jest.fn(),
+    onStartOver: jest.fn(),
     ...extra,
   }
   render(createElement(SlotsPanel, props))
@@ -115,7 +115,7 @@ describe('SlotsPanel', () => {
   })
 
   it('keeps the shortcuts out of the way: one line naming the key that opens them', () => {
-    const onShowShortcuts = vi.fn()
+    const onShowShortcuts = jest.fn()
     renderPanel({ onShowShortcuts })
     // The paragraph of small print is gone; what is left is a way in.
     expect(screen.queryByTestId('shortcut-hints')).toBeNull()

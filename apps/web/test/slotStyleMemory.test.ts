@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'bun:test'
 import type { Slot } from '@pdf-slot/core'
 import { recallSlotStyle, rememberSlotStyle, SLOT_STYLE_KEY } from '@/modules/pdf-editor/lib/slot-style-memory'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * A new text box starts with the font, size, colour and alignment the
@@ -10,7 +11,7 @@ import { recallSlotStyle, rememberSlotStyle, SLOT_STYLE_KEY } from '@/modules/pd
  */
 describe('slotStyleMemory', () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
+    unstubAllGlobals()
     localStorage.clear()
   })
 
@@ -44,7 +45,7 @@ describe('slotStyleMemory', () => {
   })
 
   it('never throws when storage is unavailable', () => {
-    vi.stubGlobal('localStorage', {
+    stubGlobal('localStorage', {
       getItem: () => { throw new Error('denied') },
       setItem: () => { throw new Error('denied') },
     })

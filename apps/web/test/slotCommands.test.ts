@@ -1,7 +1,9 @@
 import { createElement, useEffect } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock } from 'bun:test'
 import type { EditorDocument, Slot } from '@pdf-slot/core'
+import * as actualCoreModule from '@pdf-slot/core'
+const actualCore = { ...actualCoreModule }
 
 /**
  * Regression coverage for the fix-round-1 finding: the inspector's
@@ -27,17 +29,16 @@ import type { EditorDocument, Slot } from '@pdf-slot/core'
  * that machinery is what this bug lives in.
  */
 
-const renderPdfMock = vi.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+const renderPdfMock = jest.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 
-vi.mock('@pdf-slot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@pdf-slot/core')>()
-  return {
-    ...actual,
-    renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
-  }
-})
+// bun's mock.module has no `importOriginal`, so the real module is
+// captured above -- before the mock registers -- and spread over here.
+mock.module('@pdf-slot/core', () => ({
+  ...actualCore,
+  renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
+}))
 
-vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
+mock.module('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => Promise.resolve({}),
 }))
 
@@ -64,13 +65,13 @@ function makeSlot(overrides: Partial<Slot> = {}): Slot {
 
 describe('createSlotCommands wired to a real store + real useCommitRender + real panels', () => {
   beforeEach(() => {
-    renderPdfMock.mockReset()
-    renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
+  renderPdfMock.mockReset()
+  renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
   })
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   // Explicit 20s timeout (third arg below), not because this test does

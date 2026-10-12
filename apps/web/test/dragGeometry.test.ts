@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import type { Viewport } from '@pdf-slot/core'
 import {
   MIN_SLOT_WIDTH,

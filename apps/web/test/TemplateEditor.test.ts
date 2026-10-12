@@ -1,10 +1,13 @@
 import { createElement } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
 import { installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, Slot, TemplateLayout, TemplateValues } from '@pdf-slot/core'
 import type { OpenSession, SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
 import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
+import * as actualCoreModule from '@pdf-slot/core'
+const actualCore = { ...actualCoreModule }
 
 /**
  * The one-screen shell, driven the way a user would: click the page, name
@@ -13,19 +16,18 @@ import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
  * one Download performs.
  */
 
-const renderPdfMock = vi.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
-vi.mock('@pdf-slot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@pdf-slot/core')>()
-  return {
-    ...actual,
-    renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
-  }
-})
+const renderPdfMock = jest.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+// bun's mock.module has no `importOriginal`, so the real module is
+// captured above -- before the mock registers -- and spread over here.
+mock.module('@pdf-slot/core', () => ({
+  ...actualCore,
+  renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
+}))
 
 // pdf.js is mocked at the same seam as Editor.test.ts: this suite drives
 // the real workspace (canvas click -> overlay -> textarea) but never needs
 // pixels drawn in jsdom.
-vi.mock('pdfjs-dist', async () => {
+mock.module('pdfjs-dist', async () => {
   const { fakePdfjsDocument } = await import('./helpers/editorFixtures')
   return { GlobalWorkerOptions: {}, getDocument: () => fakePdfjsDocument() }
 })
@@ -91,19 +93,19 @@ const rowNames = (container: HTMLElement) =>
 describe('TemplateEditor', () => {
   beforeEach(() => {
     installFontFixtures()
-    renderPdfMock.mockReset()
+  renderPdfMock.mockReset()
   })
   afterEach(() => {
     cleanup()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
-    vi.useRealTimers()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
+    jest.useRealTimers()
   })
 
   it('records the open file; a click on the page creates a slot named in place, listed in the panel with a field', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: jest.fn() }))
     await waitFor(() => expect(store.session()).toEqual({ fileId: 'file-1' }))
     expect(screen.getByTestId('empty-hint')).toBeTruthy()
 
@@ -126,7 +128,7 @@ describe('TemplateEditor', () => {
     // not, and the download (rightly) has none of it. Naming therefore
     // ends in the text box, with the caret in it.
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: jest.fn() }))
     await placeSlot(container, 'Added')
 
     const box = await waitFor(() => {
@@ -144,7 +146,7 @@ describe('TemplateEditor', () => {
 
   it('an empty name discards the new slot: Escape, or Enter/blur with nothing typed', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: newFile, store: memoryStore(), onStartOver: jest.fn() }))
     const canvas = await waitForCanvas(container)
 
     fireEvent.click(canvas, { clientX: 50, clientY: 50 })
@@ -167,9 +169,9 @@ describe('TemplateEditor', () => {
   it('a known file opens with its slots and values; typing in a field shows on the page and vice versa; Save persists both records', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const sonner = await import('sonner')
-    const success = vi.spyOn(sonner.toast, 'success')
+    const success = spyOn(sonner.toast, 'success')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: jest.fn() }))
 
     const dateField = await waitFor(() => screen.getByTestId('slot-field-s2') as HTMLTextAreaElement)
     expect(dateField.value).toBe('07/11/2024')
@@ -201,7 +203,7 @@ describe('TemplateEditor', () => {
     // keystroke in the form flattened a two-line value the user had typed
     // on the page.
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     const onPage = await waitFor(() => {
       const el = container.querySelector('[data-slot-id="s1"] textarea')
       if (!el) throw new Error('overlay not mounted yet')
@@ -215,24 +217,24 @@ describe('TemplateEditor', () => {
   })
 
   it('typing is saved on its own after ~1s, without pressing Save', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
+    jest.useFakeTimers()
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: vi.fn() }))
+    render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-field-s1'))
     fireEvent.change(screen.getByTestId('slot-field-s1'), { target: { value: '00' } })
     fireEvent.change(screen.getByTestId('slot-field-s1'), { target: { value: '001' } })
-    await vi.advanceTimersByTimeAsync(1100)
+    await jest.advanceTimersByTime(1100)
     expect(store.values.get('file-1')?.values.s1).toBe('001')
   })
 
   it('an untouched new file persists nothing -- not after the debounce, not on unmount', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
+    jest.useFakeTimers()
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { unmount } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
+    const { unmount } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('empty-hint'))
-    await vi.advanceTimersByTimeAsync(1100)
+    await jest.advanceTimersByTime(1100)
     unmount()
     expect(store.layouts.size).toBe(0)
     expect(store.values.size).toBe(0)
@@ -241,7 +243,7 @@ describe('TemplateEditor', () => {
   it('renaming from the inspector and from the row both change the name everywhere', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-row-s1'))
 
     fireEvent.click(screen.getByTestId('slot-row-s1'))
@@ -263,7 +265,7 @@ describe('TemplateEditor', () => {
 
   it('the padlock freezes the layout: no moving, no placing, no typography -- typing still works', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     const box = await waitFor(() => {
       const el = container.querySelector('[data-slot-id="s1"]')
       if (!el) throw new Error('overlay not mounted yet')
@@ -289,28 +291,28 @@ describe('TemplateEditor', () => {
   it('Download performs the one render, of the values (never the placeholder names), and saves exactly its bytes', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const renderedOutput = new Uint8Array([9, 9, 9])
-    renderPdfMock.mockResolvedValue(renderedOutput)
+  renderPdfMock.mockResolvedValue(renderedOutput)
 
     const captured: { blobParts: unknown[] | null } = { blobParts: null }
     class FakeURL extends URL {
-      static createObjectURL = vi.fn(() => 'blob:fake-url')
-      static revokeObjectURL = vi.fn()
+      static createObjectURL = jest.fn(() => 'blob:fake-url')
+      static revokeObjectURL = jest.fn()
     }
-    vi.stubGlobal('URL', FakeURL)
+    stubGlobal('URL', FakeURL)
     class FakeBlob {
       constructor(parts: unknown[]) {
         captured.blobParts = parts
       }
     }
-    vi.stubGlobal('Blob', FakeBlob)
+    stubGlobal('Blob', FakeBlob)
     const originalCreateElement = document.createElement.bind(document)
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    spyOn(Object.getPrototypeOf(document) as Document, 'createElement').mockImplementation((tag: string) => {
       const el = originalCreateElement(tag)
-      if (tag === 'a') el.click = vi.fn()
+      if (tag === 'a') el.click = jest.fn()
       return el
     })
 
-    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-field-s1'))
     fireEvent.change(screen.getByTestId('slot-field-s1'), { target: { value: 'typed' } })
     await act(async () => {
@@ -329,8 +331,8 @@ describe('TemplateEditor', () => {
   it('blocks download and names the offending characters for unsupported text', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const sonner = await import('sonner')
-    const errorSpy = vi.spyOn(sonner.toast, 'error')
-    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const errorSpy = spyOn(sonner.toast, 'error')
+    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-field-s1'))
     fireEvent.change(screen.getByTestId('slot-field-s1'), { target: { value: 'Hello 日本語' } })
 
@@ -345,7 +347,7 @@ describe('TemplateEditor', () => {
   it('Start over clears the open session and hands off', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const onStartOver = vi.fn()
+    const onStartOver = jest.fn()
     render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver }))
     await waitFor(() => expect(store.session()).not.toBeNull())
     fireEvent.click(screen.getByTestId('start-over-button'))
@@ -359,7 +361,7 @@ describe('TemplateEditor', () => {
     // editor. (The stale session is at worst re-tried on the next reload.)
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = { ...memoryStore(), clear: async () => { throw new Error('quota') } }
-    const onStartOver = vi.fn()
+    const onStartOver = jest.fn()
     render(createElement(TemplateEditor, { opened: knownFile, store, onStartOver }))
     await waitFor(() => screen.getByTestId('start-over-button'))
     fireEvent.click(screen.getByTestId('start-over-button'))
@@ -369,7 +371,7 @@ describe('TemplateEditor', () => {
   it('duplicating from a row adds a second slot with the same settings, named "<name> copy", on the page and in the panel', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-duplicate-s1'))
     await waitFor(() => {
       if (container.querySelectorAll('[data-slot-id]').length < 2) throw new Error('overlays not mounted yet')
@@ -386,7 +388,7 @@ describe('TemplateEditor', () => {
     const copy = boxes[2] as HTMLElement
     expect(copy.style.width).toBe(source.style.width)
     expect(copy.dataset.slotId).not.toBe(source.dataset.slotId)
-    expect(copy.style.outline).toContain('var(--slot-selection)')
+    expect(copy.style.outlineColor).toContain('var(--slot-selection)')
 
     // A second duplicate of the same source is numbered, not "copy copy".
     fireEvent.click(screen.getByTestId('slot-duplicate-s1'))
@@ -405,7 +407,7 @@ describe('TemplateEditor', () => {
       ...knownFile, values: null,
       doc: { ...doc, pages: [{ width: 612, height: 792 }, { width: 612, height: 792 }] },
     }
-    const { container } = render(createElement(TemplateEditor, { opened: twoPages, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: twoPages, store, onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-row-s1'))
     await waitFor(() => {
       if (container.querySelectorAll('[data-slot-id]').length < 2) throw new Error('overlays not mounted yet')
@@ -429,7 +431,7 @@ describe('TemplateEditor', () => {
     const pasted = boxes[0] as HTMLElement
     expect(pasted.style.left).toBe('80px')
     expect(pasted.style.top).toBe('40px')
-    expect(pasted.style.outline).toContain('var(--slot-selection)')
+    expect(pasted.style.outlineColor).toContain('var(--slot-selection)')
     // The source was removed above, so its name is free and the paste
     // takes it back rather than inventing "CO# copy".
     expect(rowNames(container)).toEqual(['Date', 'CO#'])
@@ -449,7 +451,7 @@ describe('TemplateEditor', () => {
   it('Alt+drag leaves the slot where it is and drags a copy named "<name> copy"', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: { ...knownFile, values: null }, store, onStartOver: jest.fn() }))
     const source = await waitFor(() => {
       const el = container.querySelector('[data-slot-id="s1"]')
       if (!el) throw new Error('overlay not mounted yet')
@@ -475,13 +477,13 @@ describe('TemplateEditor', () => {
     const copy = boxes.find((b) => b.dataset.slotId !== 's1' && b.dataset.slotId !== 's2')!
     expect(parseFloat(copy.style.left)).toBeCloseTo(parseFloat(before.left) + 30, 3)
     expect(parseFloat(copy.style.top)).toBeCloseTo(parseFloat(before.top) + 20, 3)
-    expect(copy.style.outline).toContain('var(--slot-selection)')
+    expect(copy.style.outlineColor).toContain('var(--slot-selection)')
     expect(rowNames(container)).toContain('CO# copy')
   })
 
   it('Ctrl+X lifts a slot out and Ctrl+V puts it down again, keeping its name and its text', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     await waitFor(() => screen.getByTestId('slot-row-s1'))
     await waitFor(() => {
       if (container.querySelectorAll('[data-slot-id]').length < 2) throw new Error('overlays not mounted yet')
@@ -505,7 +507,7 @@ describe('TemplateEditor', () => {
 
   it('the page stage is not text-selectable and never starts a native drag (which would hijack a slot drag)', async () => {
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
-    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: vi.fn() }))
+    render(createElement(TemplateEditor, { opened: knownFile, store: memoryStore(), onStartOver: jest.fn() }))
     const stage = await waitFor(() => screen.getByTestId('page-stage'))
     expect(stage.style.userSelect).toBe('none')
     // A native dragstart bubbling from anywhere inside the stage is cancelled.
@@ -524,7 +526,7 @@ describe('TemplateEditor', () => {
     // so the check lives there.
     const { TemplateEditor } = await import('@/modules/pdf-editor/pages/template-editor-page')
     const store = memoryStore()
-    const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: vi.fn() }))
+    const { container } = render(createElement(TemplateEditor, { opened: newFile, store, onStartOver: jest.fn() }))
     await placeSlot(container, 'Date')
     const canvas = await waitForCanvas(container)
     fireEvent.click(canvas, { clientX: 150, clientY: 150 })

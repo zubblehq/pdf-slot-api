@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { toStagePoint } from '@/modules/pdf-editor/components/canvas/coordinates'
 
 describe('toStagePoint', () => {

@@ -1,6 +1,7 @@
 import { IDBFactory, IDBKeyRange } from 'fake-indexeddb'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from 'bun:test'
 import type { StoredFile, TemplateLayout, TemplateValues } from '@pdf-slot/core'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 const file: StoredFile = {
   fileId: 'f1', name: 'form.pdf', source: new Uint8Array([1, 2, 3]),
@@ -14,12 +15,12 @@ const values: TemplateValues = { fileId: 'f1', updatedAt: '2026-09-13T00:00:00.0
 
 describe('IndexedDbTemplateStore', () => {
   beforeEach(() => {
-    vi.stubGlobal('indexedDB', new IDBFactory())
-    vi.stubGlobal('IDBKeyRange', IDBKeyRange)
+    stubGlobal('indexedDB', new IDBFactory())
+    stubGlobal('IDBKeyRange', IDBKeyRange)
   })
   afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('round-trips file, layout and values by fileId, and reads null for unknown ids', async () => {
@@ -79,9 +80,9 @@ describe('IndexedDbTemplateStore', () => {
   })
 
   it('never rejects when IndexedDB is unavailable; reads are null and one warning is shown', async () => {
-    vi.stubGlobal('indexedDB', undefined)
+    stubGlobal('indexedDB', undefined)
     const sonner = await import('sonner')
-    const warn = vi.spyOn(sonner.toast, 'warning')
+    const warn = spyOn(sonner.toast, 'warning')
     const { IndexedDbTemplateStore } = await import('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore')
     const store = new IndexedDbTemplateStore()
     await expect(store.putLayout(layout)).resolves.toBeUndefined()

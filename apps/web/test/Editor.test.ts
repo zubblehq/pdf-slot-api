@@ -1,8 +1,11 @@
 import { createElement, useState } from 'react'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
 import { fakePdfjsDocument, installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, Point, Slot } from '@pdf-slot/core'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
+import * as actualCoreModule from '@pdf-slot/core'
+const actualCore = { ...actualCoreModule }
 
 /**
  * Wiring tests for the workspace, driven the way a user actually would:
@@ -16,28 +19,27 @@ import type { EditorDocument, Point, Slot } from '@pdf-slot/core'
  * the naming/placement callbacks a parent supplies.
  */
 
-const renderPdfMock = vi.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+const renderPdfMock = jest.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 // After a first output exists, later renders are increments on top of it
 // (see useCommitRender). Mocked to hand back fresh bytes per call so a
 // second commit in these tests produces a distinct `bytes` value.
 const renderPdfIncrementalMock =
-  vi.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+  jest.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 
-vi.mock('@pdf-slot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@pdf-slot/core')>()
-  return {
-    ...actual,
-    renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
-    renderPdfIncremental: (...args: Parameters<typeof renderPdfIncrementalMock>) =>
+// bun's mock.module has no `importOriginal`, so the real module is
+// captured above -- before the mock registers -- and spread over here.
+mock.module('@pdf-slot/core', () => ({
+  ...actualCore,
+  renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
+  renderPdfIncremental: (...args: Parameters<typeof renderPdfIncrementalMock>) =>
       renderPdfIncrementalMock(...args),
-  }
-})
+}))
 
 // pdf.js is mocked at the same seam as usePdfDocument.test.ts: this suite
 // cares about what bytes Editor hands to PageCanvas (and when pdf.js
 // confirms painting them), not about actually drawing pixels in jsdom.
-const getDocumentMock = vi.fn()
-vi.mock('pdfjs-dist', () => ({
+const getDocumentMock = jest.fn()
+mock.module('pdfjs-dist', () => ({
   GlobalWorkerOptions: {},
   getDocument: (...args: unknown[]) => getDocumentMock(...args),
 }))
@@ -120,9 +122,9 @@ async function placeAndTypeIntoASlot(container: HTMLElement, text = 'Hello world
 
 describe('Editor wiring: commit makes the canvas (not doc.source) the truth', () => {
   beforeEach(() => {
-    renderPdfMock.mockReset()
-    renderPdfIncrementalMock.mockReset()
-    renderPdfIncrementalMock.mockImplementation(
+  renderPdfMock.mockReset()
+  renderPdfIncrementalMock.mockReset()
+  renderPdfIncrementalMock.mockImplementation(
       async (previous, slots) => new Uint8Array([...previous, slots.length]),
     )
     getDocumentMock.mockReset()
@@ -133,8 +135,8 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
 
   afterEach(() => {
     cleanup()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('tells the user when the fonts fail to load, instead of only logging', async () => {
@@ -148,10 +150,10 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
     // cache on rejection, so the tests below still load fonts normally.
     const Harness = await makeHarness()
     const sonner = await import('sonner')
-    const errorSpy = vi.spyOn(sonner.toast, 'error')
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorSpy = spyOn(sonner.toast, 'error')
+    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
 
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
+    stubGlobal('fetch', jest.fn(async () => { throw new Error('offline') }))
 
     const { container } = render(createElement(Harness, { doc: makeDoc(), renderOnCommit: true }))
 
@@ -166,7 +168,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
   it('feeds PageCanvas the rendered bytes, not doc.source, once a commit lands', async () => {
     const Harness = await makeHarness()
     const renderedOutput = new Uint8Array([9, 9, 9, 9, 9])
-    renderPdfMock.mockResolvedValue(renderedOutput)
+  renderPdfMock.mockResolvedValue(renderedOutput)
 
     const { container } = render(createElement(Harness, { doc: makeDoc(), renderOnCommit: true }))
 
@@ -188,7 +190,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
 
   it('hides the committed slot\'s own DOM text once the canvas has painted it', async () => {
     const Harness = await makeHarness()
-    renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
+  renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
 
     const { container } = render(createElement(Harness, { doc: makeDoc(), renderOnCommit: true }))
 
@@ -213,7 +215,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
     // of every committed slot on every commit. Only the slot whose own
     // content changed has anything to show in that window.
     const Harness = await makeHarness()
-    renderPdfMock.mockResolvedValue(new Uint8Array([7, 7]))
+  renderPdfMock.mockResolvedValue(new Uint8Array([7, 7]))
 
     // Paints: #1 is doc.source on mount, #2 slot A's commit, #3 slot B's.
     // From the third on, the paint is held open until released.
@@ -221,7 +223,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
     let paints = 0
     getDocumentMock.mockImplementation(() => ({
       promise: Promise.resolve({
-        getPage: vi.fn(async () => ({
+        getPage: jest.fn(async () => ({
           getViewport: () => ({ width: 100, height: 100 }),
           render: () => {
             paints += 1
@@ -231,11 +233,11 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
                 : new Promise<void>((resolve) => {
                     releasePaint = resolve
                   })
-            return { promise, cancel: vi.fn() }
+            return { promise, cancel: jest.fn() }
           },
         })),
       }),
-      destroy: vi.fn(),
+      destroy: jest.fn(),
     }))
 
     const { container } = render(createElement(Harness, { doc: makeDoc(), renderOnCommit: true }))
@@ -276,7 +278,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
     // overlay stays the preview, and the single render happens on Download
     // (see TemplateEditor.test.ts for that half).
     const Harness = await makeHarness()
-    renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
+  renderPdfMock.mockResolvedValue(new Uint8Array([9, 9, 9]))
 
     const { container } = render(createElement(Harness, { doc: makeDoc() }))
     const textarea = await placeAndTypeIntoASlot(container, 'typed')
@@ -293,7 +295,7 @@ describe('Editor wiring: commit makes the canvas (not doc.source) the truth', ()
 
 describe('Editor workspace: placing, locking, panning, keys', () => {
   beforeEach(() => {
-    renderPdfMock.mockReset()
+  renderPdfMock.mockReset()
     getDocumentMock.mockReset()
     installFontFixtures()
     getDocumentMock.mockReturnValue(fakePdfjsDocument())
@@ -301,8 +303,8 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
 
   afterEach(() => {
     cleanup()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   const seeded: Slot = {
@@ -322,7 +324,7 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
 
   it('a click on the page reports a PDF point -- stage px are points, y flipped from the page bottom', async () => {
     const Harness = await makeHarness()
-    const onPlaceSlot = vi.fn()
+    const onPlaceSlot = jest.fn()
     const { container } = render(createElement(Harness, { doc: makeDoc(2), onPlaceSlot }))
     const canvas = await waitFor(() => container.querySelector('canvas') as HTMLCanvasElement)
     // jsdom reports a zero rect, so client coords are stage coords.
@@ -333,7 +335,7 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
 
   it('locked: clicks place nothing and slots render locked', async () => {
     const Harness = await makeHarness()
-    const onPlaceSlot = vi.fn()
+    const onPlaceSlot = jest.fn()
     const { container } = render(createElement(Harness, { doc: makeDoc(), initialSlots: [seeded], locked: true, onPlaceSlot }))
     const box = await mountedSlot(container)
     expect(box.style.cursor).toBe('text')
@@ -354,7 +356,7 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
 
   it('space held: a shield covers the slots so a drag pans, and a click places nothing', async () => {
     const Harness = await makeHarness()
-    const onPlaceSlot = vi.fn()
+    const onPlaceSlot = jest.fn()
     const { container } = render(createElement(Harness, { doc: makeDoc(), initialSlots: [seeded], onPlaceSlot }))
     await mountedSlot(container)
     expect(container.querySelector('[data-testid="pan-shield"]')).toBeNull()
@@ -369,12 +371,12 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
 
   it('Delete removes the selected slot, Escape deselects; neither while typing', async () => {
     const Harness = await makeHarness()
-    const onRemoveSlot = vi.fn()
+    const onRemoveSlot = jest.fn()
     const { container } = render(createElement(Harness, { doc: makeDoc(), initialSlots: [seeded], onRemoveSlot }))
     const box = await mountedSlot(container)
     const textarea = box.querySelector('textarea') as HTMLTextAreaElement
     fireEvent.focus(textarea)
-    await waitFor(() => expect(box.style.outline).toContain('var(--slot-selection)'))
+    await waitFor(() => expect(box.style.outlineColor).toContain('var(--slot-selection)'))
 
     // In the field, Delete edits text.
     fireEvent.keyDown(textarea, { key: 'Delete' })
@@ -385,7 +387,7 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
     expect(onRemoveSlot).toHaveBeenCalledWith('s1')
 
     fireEvent.keyDown(window, { key: 'Escape' })
-    await waitFor(() => expect(box.style.outline).toBe('none'))
+    await waitFor(() => expect(box.style.outlineStyle).toBe('none'))
   })
 
   it('the zoom pill steps through presets and reports the scale; the page pill turns pages', async () => {
@@ -410,8 +412,8 @@ describe('Editor workspace: placing, locking, panning, keys', () => {
     const { container } = render(createElement(Harness, { doc: makeDoc(), initialSlots: [seeded] }))
     const box = await mountedSlot(container)
     fireEvent.focus(box.querySelector('textarea') as HTMLTextAreaElement)
-    await waitFor(() => expect(box.style.outline).toContain('var(--slot-selection)'))
+    await waitFor(() => expect(box.style.outlineColor).toContain('var(--slot-selection)'))
     fireEvent.click(container.querySelector('[data-testid="canvas-backdrop"]') as HTMLElement)
-    await waitFor(() => expect(box.style.outline).toBe('none'))
+    await waitFor(() => expect(box.style.outlineStyle).toBe('none'))
   })
 })

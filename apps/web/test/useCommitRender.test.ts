@@ -1,5 +1,5 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock } from 'bun:test'
 import type { EditorDocument, Slot } from '@pdf-slot/core'
 
 /**
@@ -10,18 +10,18 @@ import type { EditorDocument, Slot } from '@pdf-slot/core'
  * red -- see task-16-report.md for the exact failure message.
  */
 
-const renderPdfMock = vi.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+const renderPdfMock = jest.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 const renderPdfIncrementalMock =
-  vi.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
-const loadFontBytesMock = vi.fn<() => Promise<unknown>>()
+  jest.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+const loadFontBytesMock = jest.fn<() => Promise<unknown>>()
 
-vi.mock('@pdf-slot/core', () => ({
+mock.module('@pdf-slot/core', () => ({
   renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
   renderPdfIncremental: (...args: Parameters<typeof renderPdfIncrementalMock>) =>
     renderPdfIncrementalMock(...args),
 }))
 
-vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
+mock.module('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => loadFontBytesMock(),
 }))
 
@@ -222,7 +222,8 @@ describe('useCommitRender', () => {
     await act(async () => {
       out = await result.current.render()
     })
-    expect(out).toBe(first)
+    expect(out).toBeDefined()
+      expect(out!).toBe(first)
     expect(renderPdfMock).toHaveBeenCalledWith(doc, slotsA, FONTS)
     expect(renderPdfIncrementalMock).not.toHaveBeenCalled()
     expect(result.current.bytes).toBe(first)
@@ -235,7 +236,8 @@ describe('useCommitRender', () => {
     expect(renderPdfIncrementalMock).toHaveBeenCalledTimes(1)
     expect(renderPdfIncrementalMock).toHaveBeenCalledWith(first, slotsB, FONTS)
     expect(renderPdfMock).toHaveBeenCalledTimes(1)
-    expect(out).toBe(second)
+    expect(out).toBeDefined()
+    expect(out!).toBe(second)
     expect(result.current.bytes).toBe(second)
     expect(result.current.renderedSlots).toBe(slotsB)
   })
@@ -257,7 +259,8 @@ describe('useCommitRender', () => {
     await act(async () => {
       out = await result.current.render()
     })
-    expect(out).toBe(first)
+    expect(out).toBeDefined()
+      expect(out!).toBe(first)
     expect(renderPdfMock).toHaveBeenCalledTimes(1)
     expect(renderPdfIncrementalMock).not.toHaveBeenCalled()
   })
@@ -291,6 +294,7 @@ describe('useCommitRender', () => {
     await pending
 
     expect(renderPdfIncrementalMock).toHaveBeenCalledWith(firstBytes, slotsB, FONTS)
-    expect(out).toBe(secondBytes)
+    expect(out).toBeDefined()
+    expect(out!).toBe(secondBytes)
   })
 })

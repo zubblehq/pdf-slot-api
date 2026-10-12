@@ -200,6 +200,9 @@
   --slot-highlight: rgba(26, 58, 95, 0.09);
   --slot-highlight-strong: rgba(26, 58, 95, 0.16);
   --slot-highlight-edge: rgba(26, 58, 95, 0.55);
+  /* A slot name shown where its text will go: the box's accent, faded. Never
+     the slot's own ink -- in that colour a name reads as exportable text. */
+  --slot-placeholder: rgba(26, 58, 95, 0.38);
 
   /* Workspace behind the page, and the rulers along its edges. */
   --canvas: #e8e4da;
@@ -289,6 +292,7 @@
   --slot-highlight: rgba(13, 153, 255, 0.1);
   --slot-highlight-strong: rgba(13, 153, 255, 0.18);
   --slot-highlight-edge: rgba(13, 153, 255, 0.55);
+  --slot-placeholder: rgba(13, 153, 255, 0.38);
   /* Rulers: their own surface, ticks, and the selected range's wash. */
   --ruler: #2c2c2c;
   --ruler-tick: #6f6f6f;

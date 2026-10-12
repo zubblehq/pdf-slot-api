@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { addTableRow, applyRowRemoval, removeTableRow, resizeColumn, type Slot, type TemplateTable } from '@pdf-slot/core'
 import { cellsWithText, isCell, textsOfCells } from '@/modules/pdf-editor/components/table/tableSlots'
 

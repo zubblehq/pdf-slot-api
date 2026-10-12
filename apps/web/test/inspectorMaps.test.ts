@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { hasBold, toFontChoice, toFontId } from '@/modules/pdf-editor/components/panels/fontChoice'
 import { hexToRgb, rgbToHex } from '@/modules/pdf-editor/components/panels/colorHex'
 

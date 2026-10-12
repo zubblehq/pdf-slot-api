@@ -20,13 +20,23 @@ const serverFonts = embeddedFontProvider()
 export const API_KEY = 'test-key'
 export const API_URL = 'http://api.test'
 
+/**
+ * What the helpers hand out in place of `fetch`.
+ *
+ * Deliberately not `typeof fetch`: the global's exact shape differs between
+ * the runtimes this suite is typechecked under (bun's `fetch` carries a
+ * `preconnect` property node's does not), and nothing here needs anything
+ * beyond the call signature.
+ */
+export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+
 export type BootedApi = {
   app: ReturnType<typeof createApp>
   deps: Deps & { blobs: ReturnType<typeof createMemoryBlobStore> }
   /** Every job id `POST /files/:id/jobs` handed to `startJob`, in order. Nothing runs until `runJob` is called. */
   started: string[]
   /** A `fetch` that never touches the network: the URL and init go straight into the Hono app. */
-  fetchViaApp: typeof fetch
+  fetchViaApp: FetchLike
   /** Drives the generation steps for one job the way the Workflow does in production: load, every batch, finish. */
   runJob(jobId: string): Promise<void>
 }
@@ -51,7 +61,11 @@ export async function bootApi(): Promise<BootedApi> {
   const app = createApp(deps)
   setJobContext({ db, blobs, fonts: serverFonts })
 
-  const fetchViaApp: typeof fetch = async (input, init) => app.request(input, init)
+  // Typed by its call signature rather than `typeof fetch`: the global's exact
+  // shape depends on which runtime's types are installed, and this only ever
+  // stands in for the call.
+  const fetchViaApp = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> =>
+    app.request(input as string, init)
 
   async function runJob(jobId: string): Promise<void> {
     const { batches } = await loadJob(jobId)

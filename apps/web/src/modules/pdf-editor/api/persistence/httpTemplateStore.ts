@@ -4,6 +4,19 @@ import { apiErrorSchema, fileMetaSchema, storedFileSummarySchema, templateLayout
 import type { StoredFileSummary, TemplateStore } from './templateStore'
 
 let hasWarned = false
+
+/**
+ * Let the unreachable warning be shown again.
+ *
+ * The latch above is module state, so without this each test would inherit
+ * whichever earlier case happened to trip it -- what one test provokes would
+ * decide what the next one can observe. bun:test has no module-registry
+ * reset, so the module is asked to forget instead.
+ */
+export function forgetUnreachableWarning(): void {
+  hasWarned = false
+}
+
 function warnUnreachable(): void {
   if (hasWarned) return
   hasWarned = true

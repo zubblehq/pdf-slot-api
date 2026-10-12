@@ -19,9 +19,13 @@ export const SELECTION_OUTLINE_PX = 2
 /**
  * How the name shows through an empty box: faint enough that it cannot be
  * taken for text that will be exported, solid enough to judge the fit.
+ *
+ * A theme token rather than a `color-mix()` computed here: every colour
+ * belongs in styles/, where all four themes can give it their own value, and
+ * an expression built in a component cannot be re-themed. It also survives a
+ * test DOM, which `color-mix()` does not.
  */
-export const PLACEHOLDER_COLOR = 'color-mix(in srgb, var(--slot-selection) 38%, transparent)'
-/** The name tag's own font size, in stage px. A chip, not a label. */
+export const PLACEHOLDER_COLOR = 'var(--slot-placeholder)'
 /**
  * How big the name chip is ON SCREEN: it tracks the page between these
  * two, so it reads as this slot's tag rather than a pip beside a box

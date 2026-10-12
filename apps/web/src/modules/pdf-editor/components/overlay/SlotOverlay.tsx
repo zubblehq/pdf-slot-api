@@ -129,7 +129,13 @@ export function SlotOverlay({
         // glyph 1px right and down from the slot's true origin. An outline
         // paints over the box without taking part in layout, so all three
         // (box, textarea, spans) keep exactly the same rectangle.
-        outline: selected ? `${px(SELECTION_OUTLINE_PX)}px solid var(--slot-selection)` : 'none',
+        // Longhands, not the `outline` shorthand: a CSS variable inside a
+        // shorthand is parsed inconsistently -- happy-dom turns this one into
+        // three copies of the variable -- and the longhands say the same thing
+        // without relying on that.
+        outlineWidth: selected ? px(SELECTION_OUTLINE_PX) : 0,
+        outlineStyle: selected ? 'solid' : 'none',
+        outlineColor: selected ? 'var(--slot-selection)' : 'transparent',
         outlineOffset: -px(SELECTION_OUTLINE_PX),
       }}
     >

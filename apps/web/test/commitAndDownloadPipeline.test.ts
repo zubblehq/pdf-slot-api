@@ -1,8 +1,11 @@
 import { createElement, useMemo, useState } from 'react'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
 import type { EditorDocument, Slot } from '@pdf-slot/core'
 import { TooltipProvider } from '@/app/components/ui/tooltip'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
+import * as actualCoreModule from '@pdf-slot/core'
+const actualCore = { ...actualCoreModule }
 
 /**
  * End-to-end (within jsdom, at the seam) check of the download pipeline
@@ -12,22 +15,27 @@ import { TooltipProvider } from '@/app/components/ui/tooltip'
  * bytes, and never falls back to the source once the user has edited.
  */
 
-const renderPdfMock = vi.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+const renderPdfMock = jest.fn<(doc: EditorDocument, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 const renderPdfIncrementalMock =
-  vi.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
+  jest.fn<(previous: Uint8Array, slots: Slot[], fonts: unknown) => Promise<Uint8Array>>()
 
-vi.mock('@pdf-slot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@pdf-slot/core')>()
-  return {
-    ...actual,
-    renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
-    renderPdfIncremental: (...args: Parameters<typeof renderPdfIncrementalMock>) =>
+// bun's mock.module has no `importOriginal`, so the real module is
+// captured above -- before the mock registers -- and spread over here.
+mock.module('@pdf-slot/core', () => ({
+  ...actualCore,
+  renderPdf: (...args: Parameters<typeof renderPdfMock>) => renderPdfMock(...args),
+  renderPdfIncremental: (...args: Parameters<typeof renderPdfIncrementalMock>) =>
       renderPdfIncrementalMock(...args),
-  }
-})
+}))
 
-vi.mock('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
+// Every export the module under test imports, not just the one this file
+// cares about: vitest tolerated a missing named export by handing back
+// undefined, bun refuses to load the module at all -- and bun is right, since
+// the real import would have failed the same way.
+mock.module('@/modules/pdf-editor/lib/fonts/loadFonts', () => ({
   loadFontBytes: () => Promise.resolve({}),
+  registerFontFaces: () => Promise.resolve(),
+  forgetLoadedFonts: () => {},
 }))
 
 function makeDoc(): EditorDocument {
@@ -54,8 +62,8 @@ describe('commit -> preview -> download pipeline', () => {
   let capturedBlobParts: unknown[] | null
 
   beforeEach(() => {
-    renderPdfMock.mockReset()
-    renderPdfIncrementalMock.mockReset()
+  renderPdfMock.mockReset()
+  renderPdfIncrementalMock.mockReset()
     capturedBlobParts = null
 
     // Extend (rather than replace) the real URL class: jsdom's anchor
@@ -63,10 +71,10 @@ describe('commit -> preview -> download pipeline', () => {
     // is assigned, and a naive `{ ...URL, ... }` object stub isn't callable
     // with `new`, breaking that unrelated path with a confusing error.
     class FakeURL extends URL {
-      static createObjectURL = vi.fn(() => 'blob:fake-url')
-      static revokeObjectURL = vi.fn()
+      static createObjectURL = jest.fn(() => 'blob:fake-url')
+      static revokeObjectURL = jest.fn()
     }
-    vi.stubGlobal('URL', FakeURL)
+    stubGlobal('URL', FakeURL)
 
     class FakeBlob {
       parts: unknown[]
@@ -75,20 +83,20 @@ describe('commit -> preview -> download pipeline', () => {
         capturedBlobParts = parts
       }
     }
-    vi.stubGlobal('Blob', FakeBlob)
+    stubGlobal('Blob', FakeBlob)
 
     const originalCreateElement = document.createElement.bind(document)
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    spyOn(Object.getPrototypeOf(document) as Document, 'createElement').mockImplementation((tag: string) => {
       const el = originalCreateElement(tag)
-      if (tag === 'a') el.click = vi.fn()
+      if (tag === 'a') el.click = jest.fn()
       return el
     })
   })
 
   afterEach(() => {
     cleanup()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('a first download renders once from scratch; a second one after an edit appends an increment', async () => {
@@ -97,8 +105,8 @@ describe('commit -> preview -> download pipeline', () => {
 
     const output = new Uint8Array([42, 43])
     const outputPlus = new Uint8Array([42, 43, 44])
-    renderPdfMock.mockResolvedValue(output)
-    renderPdfIncrementalMock.mockResolvedValue(outputPlus)
+  renderPdfMock.mockResolvedValue(output)
+  renderPdfIncrementalMock.mockResolvedValue(outputPlus)
     const doc = makeDoc()
 
     function Harness() {
@@ -134,7 +142,8 @@ describe('commit -> preview -> download pipeline', () => {
     await waitFor(() => expect(capturedBlobParts).not.toBeNull())
     expect(renderPdfMock).toHaveBeenCalledTimes(1)
     expect(renderPdfIncrementalMock).not.toHaveBeenCalled()
-    expect(capturedBlobParts?.[0]).toBe(output)
+    expect(capturedBlobParts?.[0]).toBeDefined()
+      expect(capturedBlobParts![0]).toBe(output)
 
     // Edit, then download: an increment on top of the first output --
     // never a second from-scratch render.
@@ -146,7 +155,8 @@ describe('commit -> preview -> download pipeline', () => {
     expect(renderPdfIncrementalMock).toHaveBeenCalledTimes(1)
     expect(renderPdfIncrementalMock.mock.calls[0]![0]).toBe(output)
     expect(renderPdfIncrementalMock.mock.calls[0]![1][0]!.text).toBe('edited')
-    expect(capturedBlobParts?.[0]).toBe(outputPlus)
+    expect(capturedBlobParts?.[0]).toBeDefined()
+    expect(capturedBlobParts![0]).toBe(outputPlus)
   })
 
   it('in verification mode, download clicked in the same interaction as the edit saves the edit, not the source', async () => {
@@ -164,7 +174,7 @@ describe('commit -> preview -> download pipeline', () => {
 
     const edited = new Uint8Array([7, 7, 7])
     const releaseRender: { current: (() => void) | null } = { current: null }
-    renderPdfMock.mockImplementation(
+  renderPdfMock.mockImplementation(
       () =>
         new Promise<Uint8Array>((resolve) => {
           releaseRender.current = () => resolve(edited)
@@ -231,7 +241,7 @@ describe('commit -> preview -> download pipeline', () => {
     // which is two copies of the words a few points apart.
     const { useEditorPipeline } = await import('@/modules/pdf-editor/hooks/use-editor-pipeline')
 
-    renderPdfMock.mockResolvedValue(new Uint8Array([42, 43]))
+  renderPdfMock.mockResolvedValue(new Uint8Array([42, 43]))
     const doc = makeDoc()
     let pipeline!: ReturnType<typeof useEditorPipeline>
     let setText!: (text: string) => void

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { MAX_BYTES, validateFile } from '@/modules/pdf-editor/components/upload/validate'
 
 function fileOfSize(bytes: number, name: string, type: string): File {

@@ -32,6 +32,18 @@ export function loadFontBytes(): Promise<FontBytes> {
   return cache
 }
 
+/**
+ * Forget the download, so the next call fetches again.
+ *
+ * The memo above is module state, which a test cannot get behind -- and the
+ * five faces have to be fetched afresh for each case that stubs `fetch`
+ * differently. `loadFontBytes` already clears the cache on failure for the
+ * same reason; this is that, on purpose rather than on error.
+ */
+export function forgetLoadedFonts(): void {
+  cache = null
+}
+
 /** Register the very same bytes as CSS faces so the overlay cannot diverge. */
 export async function registerFontFaces(bytes: FontBytes): Promise<void> {
   await Promise.all(

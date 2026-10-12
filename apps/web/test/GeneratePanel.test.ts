@@ -1,7 +1,8 @@
 import { createElement } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test'
 import { GeneratePanel } from '@/modules/pdf-editor/components/generate/GeneratePanel'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 const fileId = 'a'.repeat(64)
 const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -25,9 +26,9 @@ const records = () => (screen.getByTestId('generate-records') as HTMLTextAreaEle
 const submit = () => screen.getByTestId('generate-submit') as HTMLButtonElement
 
 describe('GeneratePanel', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.useFakeTimers({ shouldAdvanceTime: true }); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
-  afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers() })
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { jest.useFakeTimers(); stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
+  afterEach(() => { cleanup(); unstubAllGlobals(); jest.useRealTimers() })
 
   it('submits records with the key, shows progress, then the zip link and failed rows', async () => {
     fetchMock
@@ -44,7 +45,7 @@ describe('GeneratePanel', () => {
     expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer k')
     expect(JSON.parse(String(init?.body))).toEqual({ records: [{ Name: 'A' }, { Name: 'B' }], fillFromTemplate: false })
     await waitFor(() => expect(screen.getByTestId('generate-progress').textContent).toContain('1 / 2'))
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+    await act(async () => { await jest.advanceTimersByTime(2000) })
     await waitFor(() => expect(screen.getByTestId('generate-zip').getAttribute('href')).toBe('http://api.test/jobs/j1/zip'))
     expect(screen.getByTestId('generate-failures').textContent).toContain('Row 2: bad char')
     expect(localStorage.getItem('pdf-slot-api-key')).toBe('k')
@@ -142,9 +143,9 @@ describe('GeneratePanel', () => {
 })
 
 describe('GeneratePanel: a file with a table', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
-  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
+  afterEach(() => { cleanup(); unstubAllGlobals() })
 
   const log = {
     slotNames: ['Client'],
@@ -213,9 +214,9 @@ describe('GeneratePanel: a file with a table', () => {
 })
 
 describe('GeneratePanel: what happens to the boxes the data leaves out', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
-  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
+  afterEach(() => { cleanup(); unstubAllGlobals() })
 
   const open = (props: Record<string, unknown> = {}) => {
     render(createElement(GeneratePanel, {
@@ -277,10 +278,18 @@ describe('GeneratePanel: what happens to the boxes the data leaves out', () => {
     // A job renders from the SAVED layout, and the editor's own writes are
     // debounced: without this, a change made in the last second before
     // Generate is not the one that prints.
-    fetchMock.mockResolvedValue(okJson({ jobId: 'j1' }, 202))
     const order: string[] = []
-    const onSaveNow = vi.fn(async () => { order.push('save') })
-    fetchMock.mockImplementation(async () => { order.push('job'); return okJson({ jobId: 'j1' }, 202) })
+    const onSaveNow = jest.fn(async () => { order.push('save') })
+    // The status poll gets a finished job, not another `{ jobId }`. Answering
+    // every request with the create response -- which no server does -- left
+    // the status schema rejecting it, so the panel polled every two seconds
+    // for as long as the case ran and recorded each one as work.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = String(input)
+      if (/\/jobs\/[^/]+$/.test(url)) return okJson(status({ status: 'done', done: 2, failed: 0, finishedAt: 't' }))
+      order.push('job')
+      return okJson({ jobId: 'j1' }, 202)
+    })
 
     open({ filledIn: [], onSaveNow })
     fireEvent.change(screen.getByTestId('generate-key'), { target: { value: 'k' } })
@@ -291,22 +300,33 @@ describe('GeneratePanel: what happens to the boxes the data leaves out', () => {
     await waitFor(() => expect(order).toEqual(['save', 'job']), { timeout: 10_000 })
 
     // And a save that fails stops the job rather than printing the old layout.
+    //
+    // Its own array, not a cleared one: the first panel's job polling keeps
+    // calling fetch for a little after cleanup, so reusing `order` here
+    // recorded that polling as work this panel had done. It read as a job
+    // started despite a failed save -- the opposite of what happened.
     cleanup()
-    order.length = 0
-    const failing = vi.fn(async () => { throw new Error('offline') })
+    const after: string[] = []
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = String(input)
+      if (/\/jobs\/[^/]+$/.test(url)) return okJson(status({ id: 'j2', status: 'done', done: 1, failed: 0, finishedAt: 't' }))
+      after.push('job')
+      return okJson({ jobId: 'j2' }, 202)
+    })
+    const failing = jest.fn(async () => { throw new Error('offline') })
     open({ filledIn: [], onSaveNow: failing })
     fireEvent.change(screen.getByTestId('generate-key'), { target: { value: 'k' } })
     type('[{"Name":"A"}]')
     fireEvent.click(submit())
     await waitFor(() => expect(screen.getByTestId('generate-error').textContent).toContain('Could not save the layout'), { timeout: 10_000 })
-    expect(order).toEqual([])
+    expect(after).toEqual([])
   })
 })
 
 describe('GeneratePanel: the data goes on the page', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
-  afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
+  afterEach(() => { cleanup(); unstubAllGlobals() })
 
   const open = (props: Record<string, unknown> = {}) => {
     render(createElement(GeneratePanel, {
@@ -317,7 +337,7 @@ describe('GeneratePanel: the data goes on the page', () => {
   const rows = 'Name\nAbel\nSara\nTeddy\n'
 
   it('puts the first row on the page the moment a file is imported', async () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord })
     pick(new File([rows], 'rows.csv', { type: 'text/csv' }))
 
@@ -326,7 +346,7 @@ describe('GeneratePanel: the data goes on the page', () => {
   })
 
   it('steps through the rows, and stops at each end', async () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord })
     pick(new File([rows], 'rows.csv', { type: 'text/csv' }))
     await waitFor(() => expect(screen.getByTestId('generate-preview-label').textContent).toBe('Showing row 1 of 3'))
@@ -345,7 +365,7 @@ describe('GeneratePanel: the data goes on the page', () => {
   })
 
   it('offers to show a row for data that was pasted rather than imported', () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord })
     type(rows)
 
@@ -359,7 +379,7 @@ describe('GeneratePanel: the data goes on the page', () => {
   })
 
   it('has nothing to show when the box is empty or the data is unusable', () => {
-    open({ onPreviewRecord: vi.fn() })
+    open({ onPreviewRecord: jest.fn() })
     expect(screen.queryByTestId('generate-preview')).toBeNull()
     type('Name,Name\nAbel,Sara\n')
     expect(screen.queryByTestId('generate-preview')).toBeNull()
@@ -367,9 +387,9 @@ describe('GeneratePanel: the data goes on the page', () => {
 })
 
 describe('GeneratePanel: the page and the data never disagree', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.useFakeTimers({ shouldAdvanceTime: true }); vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
-  afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers() })
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { jest.useFakeTimers(); stubGlobal('fetch', fetchMock); fetchMock.mockReset(); localStorage.clear() })
+  afterEach(() => { cleanup(); unstubAllGlobals(); jest.useRealTimers() })
 
   const open = (props: Record<string, unknown> = {}) => {
     render(createElement(GeneratePanel, {
@@ -381,7 +401,7 @@ describe('GeneratePanel: the page and the data never disagree', () => {
   const label = () => screen.getByTestId('generate-preview-label').textContent
 
   it('editing the data re-reads the shown row onto the page', async () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord })
     type(rows)
     fireEvent.click(screen.getByTestId('generate-preview-next'))
@@ -389,12 +409,12 @@ describe('GeneratePanel: the page and the data never disagree', () => {
 
     // The page must not go on showing a row the data no longer has.
     type('Client\nCHANGED\nSara\n')
-    await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    await act(async () => { await jest.advanceTimersByTime(500) })
     expect(onPreviewRecord).toHaveBeenLastCalledWith({ Client: 'CHANGED' })
   })
 
   it('falls back to the last row there is when the data is cut short', async () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord })
     type(rows)
     fireEvent.click(screen.getByTestId('generate-preview-next'))
@@ -405,14 +425,14 @@ describe('GeneratePanel: the page and the data never disagree', () => {
     type('Client\nONLY\n')
     // Never "showing row 3 of 1".
     expect(label()).toBe('Showing row 1 of 1')
-    await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    await act(async () => { await jest.advanceTimersByTime(500) })
     expect(onPreviewRecord).toHaveBeenLastCalledWith({ Client: 'ONLY' })
   })
 
   it('says there is nowhere to put a row, rather than pretending to show one', () => {
     // Nothing laid out: importing has nowhere to go, and claiming to show
     // a row while the page stays empty is worse than saying nothing.
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord, targets: { slotNames: [], tables: [] } })
     type(rows)
 
@@ -425,7 +445,7 @@ describe('GeneratePanel: the page and the data never disagree', () => {
   })
 
   it('an import with nothing laid out puts nothing on the page', async () => {
-    const onPreviewRecord = vi.fn()
+    const onPreviewRecord = jest.fn()
     open({ onPreviewRecord, targets: { slotNames: [], tables: [] } })
     pick(new File([rows], 'rows.csv', { type: 'text/csv' }))
     await waitFor(() => expect(records()).toBe(rows))
@@ -435,7 +455,7 @@ describe('GeneratePanel: the page and the data never disagree', () => {
   it('says nothing until there is data to say it about', () => {
     // Shown the moment the panel opens it reads as something already gone
     // wrong, when the user has not done anything yet.
-    open({ onPreviewRecord: vi.fn(), targets: { slotNames: [], tables: [] } })
+    open({ onPreviewRecord: jest.fn(), targets: { slotNames: [], tables: [] } })
     expect(screen.queryByTestId('generate-nothing-laid-out')).toBeNull()
 
     type(rows)
@@ -443,7 +463,7 @@ describe('GeneratePanel: the page and the data never disagree', () => {
   })
 
   it('lets the API key be read back, since a key typed blind is a key mistyped', () => {
-    open({ onPreviewRecord: vi.fn() })
+    open({ onPreviewRecord: jest.fn() })
     const field = () => screen.getByTestId('generate-key') as HTMLInputElement
     expect(field().type).toBe('password')
 

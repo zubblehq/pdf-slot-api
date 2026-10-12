@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { vi } from 'vitest'
+import { jest } from 'bun:test'
+import { stubGlobal } from '../bun/stubGlobals'
 
 /**
  * The browser-only pieces the real Editor needs in jsdom, shared by every
@@ -8,10 +9,10 @@ import { vi } from 'vitest'
  * "loads", a `document.fonts` that accepts it, and a `fetch` that serves
  * the five bundled faces from public/fonts so `createFontMetrics` parses
  * real TTFs. Call `installFontFixtures()` in `beforeEach`; the suite's
- * `vi.unstubAllGlobals()` in `afterEach` removes them.
+ * `unstubAllGlobals()` in `afterEach` removes them.
  *
- * pdf.js is NOT stubbed here: `vi.mock` is hoisted per file, so each suite
- * keeps its own `vi.mock('pdfjs-dist', …)` -- use `fakePdfjsDocument()`
+ * pdf.js is NOT stubbed here: `mock.module` is hoisted per file, so each suite
+ * keeps its own `mock.module('pdfjs-dist', …)` -- use `fakePdfjsDocument()`
  * inside it to get the standard loading-task shape.
  */
 
@@ -37,17 +38,39 @@ export const FONT_FILES = [
   'IBMPlexMono-Regular.ttf',
 ]
 
+/**
+ * The five faces, read once per test file rather than once per test.
+ *
+ * They are immutable, and they are ~2 MB each. Reading them in every
+ * `beforeEach` meant a suite that mounts the editor twenty-two times read and
+ * parsed a hundred megabytes of font data, which vitest spread across worker
+ * processes and bun -- one process -- was killed for.
+ */
+const fontBytes = new Map<string, Buffer>()
+
+function readFont(file: string): Buffer {
+  let bytes = fontBytes.get(file)
+  if (!bytes) {
+    bytes = readFileSync(path.join(FONT_DIR, file))
+    fontBytes.set(file, bytes)
+  }
+  return bytes
+}
+
 export function installFontFixtures(): void {
-  vi.stubGlobal('FontFace', FakeFontFace)
-  Object.defineProperty(document, 'fonts', { configurable: true, value: { add: vi.fn() } })
-  vi.stubGlobal(
+  stubGlobal('FontFace', FakeFontFace)
+  Object.defineProperty(document, 'fonts', { configurable: true, value: { add: jest.fn() } })
+  stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => {
+    jest.fn(async (url: string) => {
       const file = FONT_FILES.find((f) => url.endsWith(f))
       if (!file) throw new Error(`unexpected fetch in test: ${url}`)
-      const bytes = readFileSync(path.join(FONT_DIR, file))
+      const bytes = readFont(file)
       return {
         ok: true,
+        // A fresh copy each call: the caller takes ownership of the buffer it
+        // is handed (loadFonts slices it for FontFace), and the cached one
+        // must outlive every test that asks for it.
         arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       }
     }),
@@ -61,15 +84,15 @@ export function installFontFixtures(): void {
  */
 export function fakePdfjsDocument(render: () => { promise: Promise<void>; cancel: () => void } = () => ({
   promise: Promise.resolve(),
-  cancel: vi.fn(),
+  cancel: jest.fn(),
 })) {
   return {
     promise: Promise.resolve({
-      getPage: vi.fn(async () => ({
+      getPage: jest.fn(async () => ({
         getViewport: () => ({ width: 100, height: 100 }),
         render,
       })),
     }),
-    destroy: vi.fn(),
+    destroy: jest.fn(),
   }
 }

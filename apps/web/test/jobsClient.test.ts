@@ -1,13 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test'
 import { createJob, fetchJob } from '@/modules/pdf-editor/components/generate/jobsClient'
+import type { JobStatus } from '@pdf-slot/contracts'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 const fileId = 'a'.repeat(64)
 const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
 describe('jobsClient', () => {
-  const fetchMock = vi.fn<typeof fetch>()
-  beforeEach(() => { vi.stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
-  afterEach(() => vi.unstubAllGlobals())
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
+  beforeEach(() => { stubGlobal('fetch', fetchMock); fetchMock.mockReset() })
+  afterEach(() => unstubAllGlobals())
 
   it('createJob posts the records with the key and returns the job id', async () => {
     fetchMock.mockResolvedValueOnce(okJson({ jobId: 'j1' }, 202))
@@ -39,10 +41,10 @@ describe('jobsClient', () => {
   })
 
   it('fetchJob parses a status and is null for a missing job or a network failure', async () => {
-    const status = {
+    const status: JobStatus = {
       id: 'j1', fileId, status: 'running', total: 1, done: 0, failed: 0, error: null, createdAt: '2026-09-19T00:00:00.000Z', finishedAt: null,
       items: [{ index: 0, status: 'pending', error: null }],
-    }
+    } as const
     fetchMock.mockResolvedValueOnce(okJson(status))
     await expect(fetchJob('http://api.test', 'j1')).resolves.toEqual(status)
     fetchMock.mockResolvedValueOnce(okJson({ error: { code: 'not_found', message: 'Job not found' } }, 404))

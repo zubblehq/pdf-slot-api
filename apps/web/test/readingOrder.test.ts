@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import type { Slot } from '@pdf-slot/core'
 import { groupByPage, readingOrder } from '@/modules/pdf-editor/lib/reading-order'
 

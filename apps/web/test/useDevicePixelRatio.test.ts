@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import { useDevicePixelRatio } from '@/modules/pdf-editor/components/canvas/useDevicePixelRatio'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * PageCanvas sizes its backing store from devicePixelRatio. That value
@@ -10,15 +11,15 @@ import { useDevicePixelRatio } from '@/modules/pdf-editor/components/canvas/useD
  * must therefore re-render on ratio changes, not just read it once.
  */
 describe('useDevicePixelRatio', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => unstubAllGlobals())
 
   it('reads the current ratio and re-renders when it changes', () => {
     let ratio = 1
     const listeners = new Set<() => void>()
-    vi.stubGlobal('devicePixelRatio', ratio)
-    vi.stubGlobal(
+    stubGlobal('devicePixelRatio', ratio)
+    stubGlobal(
       'matchMedia',
-      vi.fn(() => ({
+      jest.fn(() => ({
         addEventListener: (_: string, fn: () => void) => listeners.add(fn),
         removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
       })),
@@ -29,7 +30,7 @@ describe('useDevicePixelRatio', () => {
     expect(listeners.size).toBe(1)
 
     ratio = 2
-    vi.stubGlobal('devicePixelRatio', ratio)
+    stubGlobal('devicePixelRatio', ratio)
     act(() => [...listeners].forEach((fn) => fn()))
     expect(result.current).toBe(2)
     // Re-subscribed for the new ratio's media query, old listener gone.
@@ -40,8 +41,8 @@ describe('useDevicePixelRatio', () => {
   })
 
   it('falls back to 1 without matchMedia (jsdom, old browsers)', () => {
-    vi.stubGlobal('devicePixelRatio', undefined)
-    vi.stubGlobal('matchMedia', undefined)
+    stubGlobal('devicePixelRatio', undefined)
+    stubGlobal('matchMedia', undefined)
     const { result } = renderHook(() => useDevicePixelRatio())
     expect(result.current).toBe(1)
   })

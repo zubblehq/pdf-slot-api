@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import type { Slot } from '@pdf-slot/core'
 import { InspectorPanel } from '@/modules/pdf-editor/components/panels/InspectorPanel'
 import { COLOR_SWATCHES } from '@/modules/pdf-editor/components/panels/ColorField'
@@ -14,12 +14,12 @@ function renderPanel(extra: Partial<Parameters<typeof InspectorPanel>[0]> = {}) 
   const props = {
     selected: slot,
     name: 'Date',
-    onRename: vi.fn(),
-    applyPatch: vi.fn(),
+    onRename: jest.fn(),
+    applyPatch: jest.fn(),
     isRendering: false,
-    render: vi.fn(async () => new Uint8Array([1])),
+    render: jest.fn(async () => new Uint8Array([1])),
     downloadBlockedReason: null,
-    onSave: vi.fn(),
+    onSave: jest.fn(),
     ...extra,
   }
   render(createElement(InspectorPanel, props))

@@ -1,10 +1,11 @@
 import { PDFDocument, PDFDict, PDFName, PDFString } from '@cantoo/pdf-lib'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'bun:test'
 import { renderPdf, FONT_IDS, FONT_FILES, type FontBytes, type StoredFile, type TemplateLayout } from '@pdf-slot/core'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import type { TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
 import { openFile } from '@/modules/pdf-editor/lib/open-file'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 function memoryStore(): TemplateStore & { layouts: Map<string, TemplateLayout>; files: string[]; stored: Map<string, StoredFile> } {
   const layouts = new Map<string, TemplateLayout>()
@@ -42,7 +43,7 @@ async function blankPdf(): Promise<Uint8Array> {
 }
 
 describe('openFile', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => unstubAllGlobals())
 
   it('an unknown PDF has no layout, is stored, and its id is the content hash', async () => {
     const store = memoryStore()
@@ -112,7 +113,7 @@ describe('openFile', () => {
     // no `subtle`, and no `randomUUID` either, so the fallback must not lean
     // on it. (Spreading a Crypto instance would copy nothing: its methods
     // live on the prototype.)
-    vi.stubGlobal('crypto', { getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto) })
+    stubGlobal('crypto', { getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto) })
     const opened = await openFile(await blankPdf(), 'form.pdf', memoryStore())
     expect(opened.fileId).toMatch(/^[0-9a-f]{32}$/)
     expect(opened.layout).toBeNull()

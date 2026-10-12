@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { createElement } from 'react'
 import { cleanup, fireEvent, render } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import { createFontMetrics, slotInset, toScreenLength, type Slot } from '@pdf-slot/core'
 import { SlotOverlay } from '@/modules/pdf-editor/components/overlay/SlotOverlay'
 
@@ -79,9 +79,9 @@ function renderOverlay(selected: boolean, extra: Partial<Parameters<typeof SlotO
       viewport: { zoom: 1, pageHeight: 792 },
       metrics,
       selected,
-      onSelect: vi.fn(),
-      onChange: vi.fn(),
-      onCommit: vi.fn(),
+      onSelect: jest.fn(),
+      onChange: jest.fn(),
+      onCommit: jest.fn(),
       ...extra,
     }),
   )
@@ -101,7 +101,9 @@ describe('SlotOverlay geometry', () => {
       // box just as much as a visible one does.
       expect(box.style.border).toBe('')
       expect(box.style.borderWidth).toBe('')
-      expect(textarea.style.inset).toBe('0px')
+      // Compared as a number: a DOM may serialise `inset: 0` with or
+      // without a unit, and either spelling means the same box.
+      expect(parseFloat(textarea.style.inset)).toBe(0)
       expect(textarea.style.width).toBe('100%')
       expect(textarea.style.height).toBe('100%')
     },
@@ -109,11 +111,11 @@ describe('SlotOverlay geometry', () => {
 
   it('still shows a visible ring when selected, in the theme\'s selection colour', () => {
     const { box } = renderOverlay(true)
-    expect(box.style.outline).toContain('var(--slot-selection)')
+    expect(box.style.outlineColor).toContain('var(--slot-selection)')
   })
 
   it('locked: no resize handle even when selected, and the tag no longer drags', () => {
-    const onChange = vi.fn()
+    const onChange = jest.fn()
     const { box } = renderOverlay(true, { locked: true, onChange })
     // The resize handle is the only child div with cursor ew-resize.
     expect(Array.from(box.querySelectorAll('div')).some((d) => d.style.cursor === 'ew-resize')).toBe(false)
@@ -126,7 +128,7 @@ describe('SlotOverlay geometry', () => {
   })
 
   it('the box is for text, the tag is for moving: a drag across the box moves nothing', () => {
-    const onChange = vi.fn()
+    const onChange = jest.fn()
     const { box } = renderOverlay(true, { onChange })
     expect(box.style.cursor).toBe('text')
     fireEvent.pointerDown(box, { pointerId: 1, clientX: 0, clientY: 0 })
@@ -136,8 +138,8 @@ describe('SlotOverlay geometry', () => {
   })
 
   it('dragging the tag moves the slot, and selects it first', () => {
-    const onChange = vi.fn()
-    const onSelect = vi.fn()
+    const onChange = jest.fn()
+    const onSelect = jest.fn()
     const { box } = renderOverlay(false, { onChange, onSelect })
     const tag = handleOf(box)
     expect(tag.style.cursor).toBe('move')
@@ -164,7 +166,7 @@ describe('SlotOverlay geometry', () => {
   })
 
   it('dragging the bottom edge reports a height patch; dragging the left edge reports x and width', () => {
-    const onChange = vi.fn()
+    const onChange = jest.fn()
     const { box } = renderOverlay(true, { onChange })
     const bottom = box.querySelector('[data-resize-edge="bottom"]') as HTMLElement
     fireEvent.pointerDown(bottom, { pointerId: 7, clientX: 0, clientY: 0 })
@@ -193,7 +195,7 @@ describe('SlotOverlay on a scaled stage', () => {
   afterEach(() => cleanup())
 
   it('divides pointer deltas by the screen scale: a 40px drag on a 2x stage moves the slot 20pt', () => {
-    const onChange = vi.fn()
+    const onChange = jest.fn()
     const { box } = renderOverlay(true, { onChange, screenScale: 2 })
     const tag = handleOf(box)
     fireEvent.pointerDown(tag, { pointerId: 1, clientX: 0, clientY: 0 })
@@ -204,7 +206,7 @@ describe('SlotOverlay on a scaled stage', () => {
   it('keeps the outline and the grab strips the same size on screen at any zoom', () => {
     const { box } = renderOverlay(true, { screenScale: 4 })
     // 2 screen px of outline is 0.5 stage px on a 4x stage.
-    expect(box.style.outline).toContain('0.5px')
+    expect(box.style.outlineWidth).toBe('0.5px')
     const strip = box.querySelector('[data-resize-edge="right"]') as HTMLElement
     expect(strip.style.width).toBe('2px')
   })
@@ -221,12 +223,12 @@ describe('SlotOverlay name and size', () => {
     expect((spans[0] as HTMLElement).style.fontFamily).toBe('PdfSlotSans')
     // In the box's accent, NEVER the slot's ink: in the slot's own colour a
     // name is indistinguishable from text that would be exported.
-    expect((spans[0] as HTMLElement).style.color).toContain('--slot-selection')
+    expect((spans[0] as HTMLElement).style.color).toContain('--slot-placeholder')
     expect((spans[0] as HTMLElement).style.color).not.toContain('rgb(')
   })
 
   it('once named, the slot takes the caret so the next thing typed is its text', () => {
-    const onFocused = vi.fn()
+    const onFocused = jest.fn()
     const { box } = renderOverlay(true, { slot: { ...makeSlot(), text: '' }, name: 'Date', autoFocus: true, onFocused })
     expect(document.activeElement).toBe(box.querySelector('textarea'))
     expect(onFocused).toHaveBeenCalledTimes(1)
@@ -273,13 +275,13 @@ describe('SlotOverlay name and size', () => {
     expect(tagOf(renderOverlay(true, { name: 'Date' }).box).style.opacity).toBe('1')
     cleanup()
     // Being named, likewise -- the box itself is the editor just then.
-    const naming = { value: 'Da', onChange: vi.fn(), onCommit: vi.fn(), onCancel: vi.fn() }
+    const naming = { value: 'Da', onChange: jest.fn(), onCommit: jest.fn(), onCancel: jest.fn() }
     const { box: beingNamed } = renderOverlay(false, { slot: { ...makeSlot(), text: '' }, name: 'Date', naming })
     expect(tagOf(beingNamed).style.opacity).toBe('1')
   })
 
   it('a hidden tag is still the handle: hovering it and dragging moves the slot', () => {
-    const onChange = vi.fn()
+    const onChange = jest.fn()
     const { box } = renderOverlay(false, { name: 'Date', onChange })
     const tag = tagOf(box)
     expect(tag.style.opacity).toBe('0')
@@ -309,7 +311,7 @@ describe('SlotOverlay name and size', () => {
   })
 
   it('naming: an inline input in place of the textarea; Enter commits, Escape cancels, typing reports', () => {
-    const naming = { value: 'Da', onChange: vi.fn(), onCommit: vi.fn(), onCancel: vi.fn() }
+    const naming = { value: 'Da', onChange: jest.fn(), onCommit: jest.fn(), onCancel: jest.fn() }
     const { box } = renderOverlay(true, { slot: { ...makeSlot(), text: '' }, naming })
     expect(box.querySelector('textarea')).toBeNull()
     const input = box.querySelector('[data-testid="slot-name-inline"]') as HTMLInputElement
@@ -324,8 +326,8 @@ describe('SlotOverlay name and size', () => {
   })
 
   it('naming: a pointerdown in the input does not start a drag', () => {
-    const onChange = vi.fn()
-    const naming = { value: '', onChange: vi.fn(), onCommit: vi.fn(), onCancel: vi.fn() }
+    const onChange = jest.fn()
+    const naming = { value: '', onChange: jest.fn(), onCommit: jest.fn(), onCancel: jest.fn() }
     const { box } = renderOverlay(true, { slot: { ...makeSlot(), text: '' }, naming, onChange })
     const input = box.querySelector('[data-testid="slot-name-inline"]') as HTMLInputElement
     fireEvent.pointerDown(input, { pointerId: 3, clientX: 0, clientY: 0 })
@@ -334,8 +336,8 @@ describe('SlotOverlay name and size', () => {
   })
 
   it('Alt+drag leaves the box where it is and moves a copy: the clone is asked for once, then patches target it', () => {
-    const onChange = vi.fn()
-    const onCloneStart = vi.fn(() => 'copy-1')
+    const onChange = jest.fn()
+    const onCloneStart = jest.fn(() => 'copy-1')
     const { box } = renderOverlay(true, { onChange, onCloneStart })
     const tag = handleOf(box)
     fireEvent.pointerDown(tag, { pointerId: 1, clientX: 0, clientY: 0, altKey: true })
@@ -349,8 +351,8 @@ describe('SlotOverlay name and size', () => {
   })
 
   it('a plain drag (no Alt) never asks for a clone and patches this slot', () => {
-    const onChange = vi.fn()
-    const onCloneStart = vi.fn(() => 'copy-1')
+    const onChange = jest.fn()
+    const onCloneStart = jest.fn(() => 'copy-1')
     const { box } = renderOverlay(true, { onChange, onCloneStart })
     const tag = handleOf(box)
     fireEvent.pointerDown(tag, { pointerId: 1, clientX: 0, clientY: 0 })

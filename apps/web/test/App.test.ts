@@ -1,10 +1,11 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
 import { fakePdfjsDocument, installFontFixtures } from './helpers/editorFixtures'
 import type { EditorDocument, StoredFile, TemplateLayout, TemplateValues } from '@pdf-slot/core'
 import type { OpenSession } from '@/modules/pdf-editor/api/persistence/templateStore'
 import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
+import { unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * App (apps/web/src/App.tsx) is what decides Dropzone vs.
@@ -14,13 +15,16 @@ import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
  * are stubbed the same way TemplateEditor.test.ts does.
  */
 
-const getDocumentMock = vi.fn()
-vi.mock('pdfjs-dist', () => ({
+const getDocumentMock = jest.fn()
+mock.module('pdfjs-dist', () => ({
   GlobalWorkerOptions: {},
   getDocument: (...args: unknown[]) => getDocumentMock(...args),
 }))
 
-const { memory, openFileMock } = vi.hoisted(() => {
+// Plain, not hoisted: vitest lifts mock factories above the file's imports and
+// needed this lifted with them. bun runs the file top to bottom, so declaring
+// it before the mock.module that uses it is enough.
+const { memory, openFileMock } = (() => {
   const memory = {
     files: new Map<string, StoredFile>(),
     layouts: new Map<string, TemplateLayout>(),
@@ -33,10 +37,10 @@ const { memory, openFileMock } = vi.hoisted(() => {
       this.session = null
     },
   }
-  return { memory, openFileMock: vi.fn() }
-})
+  return { memory, openFileMock: jest.fn() }
+})()
 
-vi.mock('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore', () => ({
+mock.module('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore', () => ({
   templateStore: {
     getFile: async (id: string) => memory.files.get(id) ?? null,
     putFile: async (f: StoredFile) => { memory.files.set(f.fileId, f) },
@@ -64,7 +68,7 @@ vi.mock('@/modules/pdf-editor/api/persistence/indexedDbTemplateStore', () => ({
   },
 }))
 
-vi.mock('@/modules/pdf-editor/lib/open-file', () => ({
+mock.module('@/modules/pdf-editor/lib/open-file', () => ({
   openFile: (...args: unknown[]) => openFileMock(...args),
 }))
 
@@ -91,8 +95,8 @@ describe('Home', () => {
 
   afterEach(() => {
     cleanup()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('shows the dropzone when nothing is open', async () => {
@@ -126,7 +130,7 @@ describe('Home', () => {
     memory.session = { fileId: FILE_ID }
     memory.files.set(FILE_ID, { fileId: FILE_ID, name: 'known.pdf', source: bytes, pages: doc.pages, createdAt: 't' })
     openFileMock.mockRejectedValueOnce(new Error('boom'))
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    spyOn(console, 'error').mockImplementation(() => {})
 
     const App = (await import('../src/App')).App
     render(createElement(App))
@@ -205,7 +209,7 @@ describe('Home', () => {
 
   it('an upload openFile rejects shows its message and stays on the dropzone', async () => {
     const sonner = await import('sonner')
-    const errorSpy = vi.spyOn(sonner.toast, 'error')
+    const errorSpy = spyOn(sonner.toast, 'error')
     openFileMock.mockRejectedValue(new Error('This PDF is password-protected.'))
 
     const App = (await import('../src/App')).App
@@ -223,7 +227,7 @@ describe('Home', () => {
 
   it('warns once when the file got a random id (no SubtleCrypto)', async () => {
     const sonner = await import('sonner')
-    const warnSpy = vi.spyOn(sonner.toast, 'warning')
+    const warnSpy = spyOn(sonner.toast, 'warning')
     const randomId = '0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b'
     openFileMock.mockResolvedValue({ doc: { ...doc, id: randomId }, fileId: randomId, layout: null, values: null })
 
@@ -241,7 +245,7 @@ describe('Home', () => {
 
   it('does not warn when the file id is a content hash', async () => {
     const sonner = await import('sonner')
-    const warnSpy = vi.spyOn(sonner.toast, 'warning')
+    const warnSpy = spyOn(sonner.toast, 'warning')
     openFileMock.mockResolvedValue({ doc, fileId: FILE_ID, layout: null, values: null })
 
     const App = (await import('../src/App')).App

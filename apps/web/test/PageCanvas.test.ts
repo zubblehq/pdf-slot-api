@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
 
 /**
  * Every commit hands PageCanvas new bytes, and pdf.js repaints the page.
@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * synchronous `drawImage` leaves nothing for the user to see in between.
  */
 
-const getDocumentMock = vi.fn()
-vi.mock('pdfjs-dist', () => ({
+const getDocumentMock = jest.fn()
+mock.module('pdfjs-dist', () => ({
   GlobalWorkerOptions: {},
   getDocument: (...args: unknown[]) => getDocumentMock(...args),
 }))
@@ -29,7 +29,7 @@ function deferred(): Deferred {
 
 describe('PageCanvas painting', () => {
   const renderCalls: { canvas: HTMLCanvasElement; done: Deferred }[] = []
-  const drawImage = vi.fn()
+  const drawImage = jest.fn()
 
   beforeEach(() => {
     renderCalls.length = 0
@@ -37,36 +37,36 @@ describe('PageCanvas painting', () => {
     getDocumentMock.mockReset()
     getDocumentMock.mockImplementation(() => ({
       promise: Promise.resolve({
-        getPage: vi.fn(async () => ({
+        getPage: jest.fn(async () => ({
           getViewport: () => ({ width: 100, height: 100 }),
           render: ({ canvas }: { canvas: HTMLCanvasElement }) => {
             const done = deferred()
             renderCalls.push({ canvas, done })
-            return { promise: done.promise, cancel: vi.fn() }
+            return { promise: done.promise, cancel: jest.fn() }
           },
         })),
       }),
-      destroy: vi.fn(),
+      destroy: jest.fn(),
     }))
     // jsdom has no 2d backend; a minimal context is enough to observe the
     // copy from the offscreen canvas to the visible one.
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+    spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
     } as unknown as CanvasRenderingContext2D)
   })
 
   afterEach(() => {
     cleanup()
-    vi.restoreAllMocks()
+    jest.restoreAllMocks()
   })
 
   it('paints offscreen and copies the finished page across in one step', async () => {
     const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
-    const onRendered = vi.fn()
+    const onRendered = jest.fn()
     const bytes = new Uint8Array([1, 2, 3])
 
     const { container } = render(
-      createElement(PageCanvas, { bytes, showing: 'document', pageIndex: 0, screenScale: 1, onCanvasClick: vi.fn(), onRendered }),
+      createElement(PageCanvas, { bytes, showing: 'document', pageIndex: 0, screenScale: 1, onCanvasClick: jest.fn(), onRendered }),
     )
     const visible = container.querySelector('canvas') as HTMLCanvasElement
 
@@ -91,21 +91,21 @@ describe('PageCanvas painting', () => {
   })
 
   it('paints the backing store at screenScale x dpr, but only once the scale has held still', async () => {
-    vi.useFakeTimers()
+    jest.useFakeTimers()
     try {
       const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
-      const getViewport = vi.fn(({ scale }: { scale: number }) => ({ width: 100 * scale, height: 100 * scale }))
+      const getViewport = jest.fn(({ scale }: { scale: number }) => ({ width: 100 * scale, height: 100 * scale }))
       getDocumentMock.mockImplementation(() => ({
         promise: Promise.resolve({
-          getPage: vi.fn(async () => ({
+          getPage: jest.fn(async () => ({
             getViewport,
-            render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+            render: () => ({ promise: Promise.resolve(), cancel: jest.fn() }),
           })),
         }),
-        destroy: vi.fn(),
+        destroy: jest.fn(),
       }))
       const bytes = new Uint8Array([1])
-      const props = { bytes, showing: 'document' as const, pageIndex: 0, onCanvasClick: vi.fn() }
+      const props = { bytes, showing: 'document' as const, pageIndex: 0, onCanvasClick: jest.fn() }
 
       const { rerender } = render(createElement(PageCanvas, { ...props, screenScale: 1 }))
       await act(async () => {
@@ -120,28 +120,28 @@ describe('PageCanvas painting', () => {
       rerender(createElement(PageCanvas, { ...props, screenScale: 2 }))
       rerender(createElement(PageCanvas, { ...props, screenScale: 2.5 }))
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(100)
+        await jest.advanceTimersByTime(100)
       })
       expect(getViewport).not.toHaveBeenCalled()
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(100)
+        await jest.advanceTimersByTime(100)
       })
       expect(getViewport).toHaveBeenCalledTimes(1)
       expect(getViewport).toHaveBeenCalledWith({ scale: 2.5 })
     } finally {
-      vi.useRealTimers()
+      jest.useRealTimers()
     }
   })
 
   it('reports a click in stage px: screen distance from the page corner over the screen scale', async () => {
     const { PageCanvas } = await import('@/modules/pdf-editor/components/canvas/PageCanvas')
-    const onCanvasClick = vi.fn()
+    const onCanvasClick = jest.fn()
     const { container } = render(
       createElement(PageCanvas, { bytes: new Uint8Array([1]), showing: 'document', pageIndex: 0, screenScale: 2, onCanvasClick }),
     )
     const canvas = container.querySelector('canvas') as HTMLCanvasElement
-    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20 } as DOMRect)
+    spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20 } as DOMRect)
 
     canvas.dispatchEvent(new MouseEvent('click', { clientX: 110, clientY: 60, bubbles: true }))
 

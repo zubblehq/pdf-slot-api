@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    // @types/bun for `bun:test`, which the suite imports; the web app itself
+    // runs in a browser and takes its DOM types from "lib".
+    "types": ["bun"],
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,

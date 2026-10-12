@@ -11,5 +11,13 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
+  {
+    rules: {
+      // A leading underscore marks an argument that exists only to hold a
+      // position -- a mock standing in for `fetch` has to accept the `init`
+      // it is handed whether or not it reads it.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
   { ignores: ['dist/**'] },
 )

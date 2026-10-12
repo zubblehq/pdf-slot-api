@@ -1,8 +1,9 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from 'bun:test'
 import { TooltipProvider } from '@/app/components/ui/tooltip'
 import { DownloadButton } from '@/modules/pdf-editor/components/toolbar/DownloadButton'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
 
 /**
  * How the file actually reaches the disk. A browser reads a blob: URL
@@ -16,16 +17,16 @@ import { DownloadButton } from '@/modules/pdf-editor/components/toolbar/Download
  */
 
 function setup(bytes = new Uint8Array([1, 2, 3]), emptySlots = 0) {
-  const createObjectURL = vi.fn((blob: unknown) => {
+  const createObjectURL = jest.fn((blob: unknown) => {
     void blob
     return 'blob:fake-url'
   })
-  const revokeObjectURL = vi.fn()
-  vi.stubGlobal('URL', class FakeURL extends URL {
+  const revokeObjectURL = jest.fn()
+  stubGlobal('URL', class FakeURL extends URL {
     static createObjectURL = createObjectURL
     static revokeObjectURL = revokeObjectURL
   })
-  vi.stubGlobal('Blob', class FakeBlob {
+  stubGlobal('Blob', class FakeBlob {
     parts: unknown[]
     constructor(parts: unknown[]) {
       this.parts = parts
@@ -35,10 +36,10 @@ function setup(bytes = new Uint8Array([1, 2, 3]), emptySlots = 0) {
   // The anchor the component creates, captured with its state at click time.
   const atClick: { connected: boolean | null; revoked: number } = { connected: null, revoked: 0 }
   const realCreateElement = document.createElement.bind(document)
-  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+  spyOn(Object.getPrototypeOf(document) as Document, 'createElement').mockImplementation((tag: string) => {
     const el = realCreateElement(tag)
     if (tag === 'a') {
-      el.click = vi.fn(() => {
+      el.click = jest.fn(() => {
         atClick.connected = el.isConnected
         atClick.revoked = revokeObjectURL.mock.calls.length
       })
@@ -52,7 +53,7 @@ function setup(bytes = new Uint8Array([1, 2, 3]), emptySlots = 0) {
       null,
       createElement(DownloadButton, {
         isRendering: false,
-        render: vi.fn(async () => bytes),
+        render: jest.fn(async () => bytes),
         downloadBlockedReason: null,
         fileName: 'form.pdf',
         emptySlots,
@@ -64,7 +65,7 @@ function setup(bytes = new Uint8Array([1, 2, 3]), emptySlots = 0) {
 
 describe('DownloadButton saving', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true })
+    jest.useFakeTimers()
   })
 
   afterEach(() => {
@@ -72,9 +73,9 @@ describe('DownloadButton saving', () => {
     // The anchor lives on <body>, outside React's container, and a test
     // that never advances the clock leaves its own behind.
     document.querySelectorAll('a[download]').forEach((el) => el.remove())
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
+    jest.useRealTimers()
+    unstubAllGlobals()
+    jest.restoreAllMocks()
   })
 
   it('clicks an anchor that is in the document, and keeps the object URL alive past the click', async () => {
@@ -99,7 +100,7 @@ describe('DownloadButton saving', () => {
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1))
     expect(document.querySelectorAll('a[download]').length).toBe(1)
 
-    await vi.advanceTimersByTimeAsync(60_000)
+    await jest.advanceTimersByTime(60_000)
 
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:fake-url')
     expect(document.querySelectorAll('a[download]').length).toBe(0)
@@ -107,8 +108,8 @@ describe('DownloadButton saving', () => {
 
   it('says when slots had no text, since those draw nothing and look lost', async () => {
     const sonner = await import('sonner')
-    const warning = vi.spyOn(sonner.toast, 'warning')
-    const success = vi.spyOn(sonner.toast, 'success')
+    const warning = spyOn(sonner.toast, 'warning')
+    const success = spyOn(sonner.toast, 'success')
     const { createObjectURL } = setup(new Uint8Array([1]), 2)
 
     fireEvent.click(screen.getByTestId('download-button'))

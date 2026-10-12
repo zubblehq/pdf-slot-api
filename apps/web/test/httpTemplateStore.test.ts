@@ -1,27 +1,32 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, jest, mock } from 'bun:test'
+import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
+import { forgetUnreachableWarning } from '@/modules/pdf-editor/api/persistence/httpTemplateStore'
 
-// Hoisted so the same spies survive `vi.resetModules()` below: a re-imported `sonner` gets these
-// again, and the assertions here keep pointing at the functions the store actually calls.
-const toast = vi.hoisted(() => ({ warning: vi.fn(), error: vi.fn() }))
-vi.mock('sonner', () => ({ toast }))
+// Plain, not hoisted: vitest lifted mock factories above the imports and this
+// had to be lifted with them. bun runs top to bottom, so declaring it before
+// the mock.module below is enough -- and the module is no longer re-imported,
+// so these spies stay the ones the store calls.
+const toast = { warning: jest.fn(), error: jest.fn() }
+mock.module('sonner', () => ({ toast }))
 
 const fileId = 'a'.repeat(64)
 const okJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
 describe('HttpTemplateStore', () => {
-  const fetchMock = vi.fn<typeof fetch>()
+  const fetchMock = jest.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>()
   let createHttpTemplateStore: typeof import('@/modules/pdf-editor/api/persistence/httpTemplateStore')['createHttpTemplateStore']
   beforeEach(async () => {
-    // The "unreachable" warning latches once per module instance, so each test gets a fresh
-    // module: what one test provokes must not decide what the next one can observe.
-    vi.resetModules()
+    // The "unreachable" warning latches once per module, so it is cleared
+    // rather than the module re-imported: what one test provokes must not
+    // decide what the next one can observe.
+    forgetUnreachableWarning()
     ;({ createHttpTemplateStore } = await import('@/modules/pdf-editor/api/persistence/httpTemplateStore'))
-    vi.stubGlobal('fetch', fetchMock)
+    stubGlobal('fetch', fetchMock)
     fetchMock.mockReset()
     toast.warning.mockClear()
     toast.error.mockClear()
   })
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => unstubAllGlobals())
   const store = () => createHttpTemplateStore('http://api.test')
 
   it('getFile joins meta and bytes; null on 404', async () => {

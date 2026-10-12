@@ -11,6 +11,10 @@
  * trailing slash, so it is correct in both cases without a flag to set.
  */
 export function assetUrl(path: string): string {
-  const base = import.meta.env.BASE_URL
+  // Defaulted rather than assumed: `BASE_URL` is Vite's, and a runtime that
+  // does not define it -- bun, or a plain Node import -- would otherwise crash
+  // here rather than fall back. No base configured means served from the root,
+  // which is what '/' says.
+  const base = import.meta.env?.BASE_URL ?? '/'
   return `${base.endsWith('/') ? base : `${base}/`}${path.replace(/^\/+/, '')}`
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { MAX_JOB_RECORDS } from '@pdf-slot/contracts'
 import { parseRecords } from '@/modules/pdf-editor/components/generate/parseRecords'
 

@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'bun:test'
 import { useEditorStore } from '@/modules/pdf-editor/hooks/use-editor-store'
 
 describe('useEditorStore: new slots take the last-used style', () => {

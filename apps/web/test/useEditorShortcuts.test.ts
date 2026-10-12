@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, jest } from 'bun:test'
 import { useEditorShortcuts } from '@/modules/pdf-editor/hooks/use-editor-shortcuts'
 
 const key = (init: KeyboardEventInit & { key: string }, target: EventTarget = window) =>
@@ -7,8 +7,8 @@ const key = (init: KeyboardEventInit & { key: string }, target: EventTarget = wi
 
 describe('useEditorShortcuts', () => {
   it('arrow keys nudge by 1pt, Shift+arrow by 10pt; screen down is PDF y down', () => {
-    const nudgeSelected = vi.fn()
-    renderHook(() => useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected }))
+    const nudgeSelected = jest.fn()
+    renderHook(() => useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected }))
     key({ key: 'ArrowRight' })
     key({ key: 'ArrowDown' })
     key({ key: 'ArrowLeft', shiftKey: true })
@@ -17,8 +17,8 @@ describe('useEditorShortcuts', () => {
   })
 
   it('arrows inside a textarea move the caret, not the slot', () => {
-    const nudgeSelected = vi.fn()
-    renderHook(() => useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected }))
+    const nudgeSelected = jest.fn()
+    renderHook(() => useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected }))
     const ta = document.createElement('textarea')
     document.body.appendChild(ta)
     key({ key: 'ArrowRight' }, ta)
@@ -27,8 +27,8 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Ctrl+Z undoes and commits; Ctrl+Shift+Z redoes; Ctrl+D duplicates', () => {
-    const undo = vi.fn(), redo = vi.fn(), commit = vi.fn(), duplicateSelected = vi.fn()
-    renderHook(() => useEditorShortcuts({ undo, redo, commit, duplicateSelected, nudgeSelected: vi.fn() }))
+    const undo = jest.fn(), redo = jest.fn(), commit = jest.fn(), duplicateSelected = jest.fn()
+    renderHook(() => useEditorShortcuts({ undo, redo, commit, duplicateSelected, nudgeSelected: jest.fn() }))
     key({ key: 'z', ctrlKey: true })
     key({ key: 'z', ctrlKey: true, shiftKey: true })
     key({ key: 'd', ctrlKey: true })
@@ -39,9 +39,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Delete/Backspace remove, Escape deselects -- but not while typing in a field', () => {
-    const deleteSelected = vi.fn(), deselect = vi.fn()
+    const deleteSelected = jest.fn(), deselect = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), deleteSelected, deselect }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), deleteSelected, deselect }),
     )
     key({ key: 'Delete' })
     key({ key: 'Backspace' })
@@ -59,9 +59,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Ctrl/Cmd + = / − / 0 zoom in, out and to fit, and keep the browser from zooming the page', () => {
-    const zoomIn = vi.fn(), zoomOut = vi.fn(), zoomFit = vi.fn()
+    const zoomIn = jest.fn(), zoomOut = jest.fn(), zoomFit = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), zoomIn, zoomOut, zoomFit }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), zoomIn, zoomOut, zoomFit }),
     )
     const plus = new KeyboardEvent('keydown', { key: '=', ctrlKey: true, bubbles: true, cancelable: true })
     window.dispatchEvent(plus)
@@ -78,9 +78,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Ctrl+C copies and Ctrl+V pastes the selected slot', () => {
-    const copySelected = vi.fn(), pasteCopied = vi.fn()
+    const copySelected = jest.fn(), pasteCopied = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), copySelected, pasteCopied }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), copySelected, pasteCopied }),
     )
     key({ key: 'c', ctrlKey: true })
     key({ key: 'v', metaKey: true })
@@ -91,9 +91,9 @@ describe('useEditorShortcuts', () => {
   it('Ctrl+C / Ctrl+V on the canvas act on the slot, even with its own text box focused', () => {
     // A slot's box takes focus the moment it is clicked, so gating on "a
     // field is focused" left no moment when slot copy/paste could fire.
-    const copySelected = vi.fn(), pasteCopied = vi.fn()
+    const copySelected = jest.fn(), pasteCopied = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), copySelected, pasteCopied }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), copySelected, pasteCopied }),
     )
     const box = document.createElement('div')
     box.setAttribute('data-slot-id', 's1')
@@ -108,9 +108,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Ctrl+C with text highlighted stays the browser\'s copy, wherever it is', () => {
-    const copySelected = vi.fn()
+    const copySelected = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), copySelected }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), copySelected }),
     )
     const ta = document.createElement('textarea')
     ta.value = 'hello'
@@ -122,9 +122,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('Ctrl+C / Ctrl+V inside a panel field stay the native text copy and paste', () => {
-    const copySelected = vi.fn(), pasteCopied = vi.fn()
+    const copySelected = jest.fn(), pasteCopied = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), copySelected, pasteCopied }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), copySelected, pasteCopied }),
     )
     const panel = document.createElement('aside')
     panel.setAttribute('data-testid', 'slot-panel')
@@ -142,8 +142,8 @@ describe('useEditorShortcuts', () => {
   it('undo and redo reach the editor even with a slot\'s box focused', () => {
     // That box is the canvas: Ctrl+Z over it means the thing just done,
     // not the last letter typed into a form field.
-    const undo = vi.fn(), redo = vi.fn()
-    renderHook(() => useEditorShortcuts({ undo, redo, commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn() }))
+    const undo = jest.fn(), redo = jest.fn()
+    renderHook(() => useEditorShortcuts({ undo, redo, commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn() }))
     const box = document.createElement('div')
     box.setAttribute('data-slot-id', 's1')
     const ta = document.createElement('textarea')
@@ -159,8 +159,8 @@ describe('useEditorShortcuts', () => {
   })
 
   it('a panel field keeps the browser\'s own undo', () => {
-    const undo = vi.fn()
-    renderHook(() => useEditorShortcuts({ undo, redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn() }))
+    const undo = jest.fn()
+    renderHook(() => useEditorShortcuts({ undo, redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn() }))
     const panel = document.createElement('aside')
     panel.setAttribute('data-testid', 'slot-panel')
     const input = document.createElement('input')
@@ -172,9 +172,9 @@ describe('useEditorShortcuts', () => {
   })
 
   it('? opens the list of commands, but not while typing one into a field', () => {
-    const showShortcuts = vi.fn()
+    const showShortcuts = jest.fn()
     renderHook(() =>
-      useEditorShortcuts({ undo: vi.fn(), redo: vi.fn(), commit: vi.fn(), duplicateSelected: vi.fn(), nudgeSelected: vi.fn(), showShortcuts }),
+      useEditorShortcuts({ undo: jest.fn(), redo: jest.fn(), commit: jest.fn(), duplicateSelected: jest.fn(), nudgeSelected: jest.fn(), showShortcuts }),
     )
     key({ key: '?' })
     expect(showShortcuts).toHaveBeenCalledTimes(1)

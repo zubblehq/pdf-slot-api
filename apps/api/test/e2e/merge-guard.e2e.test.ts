@@ -11,7 +11,7 @@ import { createHttpTemplateStore } from '@/modules/pdf-editor/api/persistence/ht
 import { templateStore as idb } from '@/modules/pdf-editor/api/persistence/indexedDbTemplateStore'
 import { requireContentStreamText } from '../../../../packages/core/test/helpers/content-stream.js'
 import { FILE_ID, putTestFile, slot, twoPagePdf } from '../helpers/fixtures.js'
-import { API_KEY, API_URL, bootApi, fonts, openZip, type BootedApi } from './helpers.js'
+import { API_KEY, API_URL, bootApi, fonts, openZip, type BootedApi, type FetchLike } from './helpers.js'
 
 /**
  * A merge guard.
@@ -154,7 +154,7 @@ describe('merge guard: the backend stays wired to the app', () => {
   it('without an API URL the app makes no network calls at all', async () => {
     // Loses: the browser-only mode starts depending on a server that may not exist -- the app
     // that used to work offline now warns, or worse, hangs on every save.
-    const fetchSpy = vi.fn<typeof fetch>(async () => new Response('the fallback must not reach the network', { status: 500 }))
+    const fetchSpy = vi.fn<FetchLike>(async () => new Response('the fallback must not reach the network', { status: 500 }))
     vi.stubGlobal('fetch', fetchSpy)
     try {
       const store = selectStores({}, idb, createHttpTemplateStore)

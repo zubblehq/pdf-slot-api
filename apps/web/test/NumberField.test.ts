@@ -1,13 +1,13 @@
 import { createElement } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, jest } from 'bun:test'
 import { NumberField } from '@/modules/pdf-editor/components/panels/NumberField'
 
 describe('NumberField', () => {
   afterEach(() => cleanup())
 
   const field = (extra: Partial<Parameters<typeof NumberField>[0]> = {}) => {
-    const onCommit = vi.fn()
+    const onCommit = jest.fn()
     const props: Parameters<typeof NumberField>[0] = {
       'aria-label': 'Padding',
       value: 0,
@@ -36,8 +36,8 @@ describe('NumberField', () => {
     // Committing per repeat forced a synchronous render per keystroke,
     // and a held key never let React come up for air: it ran past its
     // nested-update limit and threw.
-    const onCommit = vi.fn()
-    const onPreview = vi.fn()
+    const onCommit = jest.fn()
+    const onPreview = jest.fn()
     const { input } = field({ value: 0, onCommit, onPreview })
 
     for (let i = 0; i < 20; i++) fireEvent.keyDown(input, { key: 'ArrowUp' })
