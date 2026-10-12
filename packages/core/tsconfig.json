@@ -6,6 +6,11 @@
     "lib": ["ES2022"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    // On because this package is compiled by its consumers, under their
+    // settings: two dead imports here were invisible until elli-ui -- which
+    // does turn these on -- reported them as errors in its own build.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "declaration": true,
     "skipLibCheck": true,
     "types": ["node"]
