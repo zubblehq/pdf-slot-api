@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { normalizePdf, renderPdf, toSlots, type TemplateLayout } from '@pdf-slot/core'
 import { templateLayoutSchema, templateSlotSchema } from '@pdf-slot/contracts'
-import { openFile } from '@/features/template/openFile'
-import { selectStores } from '@/lib/persistence'
-import { createHttpTemplateStore } from '@/lib/persistence/httpTemplateStore'
-import { templateStore as idb } from '@/lib/persistence/indexedDbTemplateStore'
+import { openFile } from '@/modules/pdf-editor/lib/open-file'
+import { selectStores } from '@/modules/pdf-editor/api/persistence'
+import { createHttpTemplateStore } from '@/modules/pdf-editor/api/persistence/httpTemplateStore'
+import { templateStore as idb } from '@/modules/pdf-editor/api/persistence/indexedDbTemplateStore'
 import { requireContentStreamText } from '../../../../packages/core/test/helpers/content-stream.js'
 import { FILE_ID, putTestFile, slot, twoPagePdf } from '../helpers/fixtures.js'
 import { API_KEY, API_URL, bootApi, fonts, openZip, type BootedApi } from './helpers.js'
@@ -127,12 +127,12 @@ describe('merge guard: the backend stays wired to the app', () => {
     // Loses: an import that reaches past the selector (straight at IndexedDB) makes the web app
     // ignore the server entirely -- files save nowhere shared, and nobody notices until a second
     // browser shows an empty list.
-    const page = readFileSync(webSrc('app/page.tsx'), 'utf8')
+    const page = readFileSync(webSrc('App.tsx'), 'utf8')
     expect(
       page,
-      "page.tsx must read its store from '@/lib/persistence' (the selector), not from a store module directly.",
-    ).toMatch(/from '@\/lib\/persistence'/)
-    expect(page).not.toMatch(/from '@\/lib\/persistence\/indexedDbTemplateStore'/)
+      "page.tsx must read its store from '@/modules/pdf-editor/api/persistence' (the selector), not from a store module directly.",
+    ).toMatch(/from '@\/modules\/pdf-editor\/api\/persistence'/)
+    expect(page).not.toMatch(/from '@\/modules\/pdf-editor\/api\/persistence\/indexedDbTemplateStore'/)
 
     const api = await bootApi()
     vi.stubGlobal('fetch', api.fetchViaApp)
@@ -173,11 +173,15 @@ describe('merge guard: the backend stays wired to the app', () => {
   it('the generate panel is mounted wherever the editor lives', () => {
     // Loses: the server keeps working, but nobody can start a bulk job -- the feature is present
     // in the bundle and unreachable in the UI.
-    const mount = readFileSync(webSrc('features/template/TemplateEditor.tsx'), 'utf8')
+    const mount = readFileSync(webSrc('modules/pdf-editor/pages/template-editor-page.tsx'), 'utf8')
     const guidance = 'If the editor was restructured, move the GeneratePanel mount into the new shell and point this test at that file -- do not delete it.'
     expect(mount, guidance).toMatch(/GeneratePanel/)
     expect(mount, guidance).toMatch(/apiUrl/)
-    expect(mount, `${guidance} The panel needs the slot names to check a data file's columns.`).toMatch(/slotNames/)
+    // `fillTargets` carries the slot names and the tables (see
+    // use-document-view). It replaced a bare `slotNames` prop when the
+    // derivations moved into that hook; what matters is unchanged -- the panel
+    // is handed what a data file is allowed to fill.
+    expect(mount, `${guidance} The panel needs to know what a data file can fill.`).toMatch(/fillTargets/)
   })
 
   it('a generated PDF still draws exactly what the editor would draw', async () => {

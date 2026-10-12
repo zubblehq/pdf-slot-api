@@ -1,4 +1,5 @@
-import { jobStatusSchema, type JobStatus } from '@pdf-slot/contracts'
+import { CORE_VERSION_HEADER, jobStatusSchema, type JobStatus } from '@pdf-slot/contracts'
+import { coreVersion } from '@/app/lib/env'
 import type { JobRecord } from '@pdf-slot/contracts'
 
 const base = (apiUrl: string) => apiUrl.replace(/\/$/, '')
@@ -7,7 +8,14 @@ export async function createJob(apiUrl: string, fileId: string, records: JobReco
   try {
     const res = await fetch(`${base(apiUrl)}/files/${fileId}/jobs`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        // Which layout maths this page is running. The server refuses the
+        // job if it is not running the same, rather than producing a batch
+        // of PDFs positioned by one version and previewed by another.
+        ...(coreVersion ? { [CORE_VERSION_HEADER]: coreVersion } : {}),
+      },
       body: JSON.stringify({ records, fillFromTemplate }),
     })
     const body = (await res.json()) as { jobId?: unknown; error?: { message?: string } }

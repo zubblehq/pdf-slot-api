@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { zValidator } from '@hono/zod-validator'
-import { createJobRequestSchema } from '@pdf-slot/contracts'
+import { CORE_VERSION_HEADER, CORE_VERSION_MISMATCH, coreVersionsAgree, createJobRequestSchema } from '@pdf-slot/contracts'
 import type { AppEnv } from '../app.js'
 import { ApiError, notFound } from '../errors.js'
 import { getFileMeta } from '../db/files.js'
@@ -21,7 +21,20 @@ jobsRoutes.post(
     if (!result.success) throw new ApiError(400, 'invalid_request', 'records must be 1..5000 objects of strings')
   }),
   async (c) => {
-    const { db, startJob } = c.get('deps')
+    const { db, startJob, config } = c.get('deps')
+    // Before anything is rendered: if the caller's layout maths is not this
+    // service's layout maths, every PDF it produced would be positioned by one
+    // version and previewed by another. Refusing is the only honest answer --
+    // the alternative is a batch of subtly wrong documents nobody notices. See
+    // CORE_VERSION_HEADER for why the two can diverge at all.
+    const clientCore = c.req.header(CORE_VERSION_HEADER)
+    if (!coreVersionsAgree(clientCore, config.coreVersion)) {
+      throw new ApiError(
+        409,
+        CORE_VERSION_MISMATCH,
+        `This page is running a different version of the layout engine (${clientCore}) than the server (${config.coreVersion}). Reload the page and try again.`,
+      )
+    }
     const fileId = fileIdParam(c.req.param('id'))
     if (!(await getFileMeta(db, fileId))) throw notFound('File')
     const layout = await getLayout(db, fileId)

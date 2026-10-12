@@ -27,3 +27,14 @@ export const apiUrl: string | undefined = import.meta.env.VITE_API_URL || undefi
  * "true", so a typo cannot turn it on.
  */
 export const renderOnCommit: boolean = import.meta.env.VITE_RENDER_ON_COMMIT === 'true'
+
+/**
+ * Which `@pdf-slot/core` this build is running -- the commit its package.json
+ * is pinned to, injected at build time.
+ *
+ * Sent with every job so the server can refuse one when the two sides do not
+ * match; see CORE_VERSION_HEADER in @pdf-slot/contracts for why they can
+ * diverge. Unset means the check is off, which is right in a single checkout:
+ * there is one copy of core and nothing to compare.
+ */
+export const coreVersion: string | undefined = import.meta.env.VITE_CORE_VERSION || undefined

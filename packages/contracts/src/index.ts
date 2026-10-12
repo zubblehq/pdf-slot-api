@@ -181,3 +181,37 @@ export const apiErrorSchema = z.object({ error: z.object({ code: z.string(), mes
 export type ApiError = z.infer<typeof apiErrorSchema>
 
 export type { FileId }
+
+/**
+ * The header a client sends to say which `@pdf-slot/core` it is running.
+ *
+ * The browser draws the preview with core's layout maths and the server
+ * renders the PDF with the same code. They are deployed separately -- the
+ * browser when the UI ships, the service when its image is rebuilt -- so
+ * there is a window in which one has a newer core than the other. Inside it
+ * the preview and the download disagree, and nothing says so: no error, just
+ * text slightly out of place.
+ *
+ * So the client states its version and the server refuses a job when they
+ * differ. That turns a batch of subtly wrong PDFs into a message asking for a
+ * reload.
+ *
+ * Empty or absent on either side means "not configured", and the check is
+ * skipped: in a single checkout there is one copy of core and nothing to
+ * compare.
+ */
+export const CORE_VERSION_HEADER = 'x-core-version'
+
+/** The error code returned when the two sides are not running the same core. */
+export const CORE_VERSION_MISMATCH = 'core_version_mismatch'
+
+/**
+ * Whether a job may proceed, given what each side reports.
+ *
+ * Pure and exported so both sides agree on the rule, and so it can be tested
+ * without a server.
+ */
+export function coreVersionsAgree(client: string | undefined, server: string | undefined): boolean {
+  if (!client || !server) return true
+  return client === server
+}

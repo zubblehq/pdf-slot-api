@@ -105,3 +105,59 @@ describe('jobs routes', () => {
     expect(Array.from(new Uint8Array(await zip.arrayBuffer()))).toEqual([80, 75])
   })
 })
+
+describe('the layout engine the two sides are running', () => {
+  /**
+   * The browser draws the preview with core's maths and this service renders
+   * the PDF with the same code. They ship separately, so one can be newer than
+   * the other, and inside that window the preview and the download disagree
+   * silently. Refusing the job is what makes it loud.
+   */
+  const withCore = async (coreVersion?: string) =>
+    createApp(await testDeps({ config: { apiKey: 'test-key', webOrigin: 'http://web.test', ...(coreVersion ? { coreVersion } : {}) } }))
+
+  it('refuses a job when the caller is on a different core, and says which', async () => {
+    const app = await withCore('abc1234')
+    await withLayout(app)
+    const res = await app.request(
+      `/files/${FILE_ID}/jobs`,
+      post({ records: [{ Name: 'A' }] }, { ...auth, 'x-core-version': 'def5678' }),
+    )
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error.code).toBe('core_version_mismatch')
+    // Both versions named: "reload" is useless advice if the user cannot tell
+    // which side is stale when it keeps happening.
+    expect(body.error.message).toContain('def5678')
+    expect(body.error.message).toContain('abc1234')
+  })
+
+  it('lets the job through when both sides agree', async () => {
+    const startJob = vi.fn(async () => {})
+    const app = createApp(await testDeps({ startJob, config: { apiKey: 'test-key', webOrigin: 'http://web.test', coreVersion: 'abc1234' } }))
+    await withLayout(app)
+    const res = await app.request(
+      `/files/${FILE_ID}/jobs`,
+      post({ records: [{ Name: 'A' }] }, { ...auth, 'x-core-version': 'abc1234' }),
+    )
+    expect(res.status).toBe(202)
+    expect(startJob).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays out of the way when either side is unconfigured', async () => {
+    // A single checkout has one copy of core and nothing to compare, so an
+    // unset version must not block anything -- otherwise the guard breaks
+    // local development to protect a deployment that does not exist yet.
+    const serverOnly = await withCore('abc1234')
+    await withLayout(serverOnly)
+    expect((await serverOnly.request(`/files/${FILE_ID}/jobs`, post({ records: [{ Name: 'A' }] }))).status).toBe(202)
+
+    const neither = await withCore()
+    await withLayout(neither)
+    const res = await neither.request(
+      `/files/${FILE_ID}/jobs`,
+      post({ records: [{ Name: 'A' }] }, { ...auth, 'x-core-version': 'def5678' }),
+    )
+    expect(res.status).toBe(202)
+  })
+})

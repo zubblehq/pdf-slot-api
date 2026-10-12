@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string
   /** "true" renders the PDF on every commit. A testing aid; see `lib/env`. */
   readonly VITE_RENDER_ON_COMMIT?: string
+  /** The commit of @pdf-slot/core this build is pinned to; see `lib/env`. */
+  readonly VITE_CORE_VERSION?: string
 }
 
 interface ImportMeta {

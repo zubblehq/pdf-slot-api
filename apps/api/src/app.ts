@@ -12,7 +12,7 @@ import { jobsRoutes } from './routes/jobs.js'
 export type Deps = {
   db: Db
   blobs: BlobStore
-  config: Pick<Config, 'apiKey' | 'webOrigin'>
+  config: Pick<Config, 'apiKey' | 'webOrigin' | 'coreVersion'>
   /** Starts the generation workflow for a job that has been inserted. */
   startJob(jobId: string): Promise<void>
 }

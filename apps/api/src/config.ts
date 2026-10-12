@@ -1,4 +1,20 @@
-export type Config = { databaseUrl: string; blobToken: string; apiKey: string; webOrigin: string; blobDir?: string }
+export type Config = {
+  databaseUrl: string
+  blobToken: string
+  apiKey: string
+  webOrigin: string
+  blobDir?: string
+  /**
+   * Which `@pdf-slot/core` this service is running -- the commit its
+   * package.json is pinned to, injected at image build time.
+   *
+   * Optional, and absent means the check is off. In a single checkout there is
+   * one copy of core and nothing to compare; it earns its keep only once the
+   * browser and this service are deployed separately. See CORE_VERSION_HEADER
+   * in @pdf-slot/contracts.
+   */
+  coreVersion?: string
+}
 
 const VARS = { databaseUrl: 'DATABASE_URL', blobToken: 'BLOB_READ_WRITE_TOKEN', apiKey: 'API_KEY', webOrigin: 'WEB_ORIGIN' } as const
 
