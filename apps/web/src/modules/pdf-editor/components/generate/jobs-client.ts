@@ -1,6 +1,6 @@
-import { CORE_VERSION_HEADER, jobStatusSchema, type JobStatus } from '@pdf-slot/contracts'
+import { CORE_VERSION_HEADER, jobStatusSchema, type JobStatus } from '@pdf-slot/core/contracts'
 import { coreVersion } from '@/app/lib/env'
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 
 const base = (apiUrl: string) => apiUrl.replace(/\/$/, '')
 

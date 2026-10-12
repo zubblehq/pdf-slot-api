@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { normalizePdf, renderPdf, toSlots, type TemplateLayout } from '@pdf-slot/core'
-import type { JobStatus } from '@pdf-slot/contracts'
+import type { JobStatus } from '@pdf-slot/core/contracts'
 import { requireContentStreamText } from '../../../../packages/core/test/helpers/content-stream.js'
 import { FILE_ID, putTestFile, slot, twoPagePdf } from '../helpers/fixtures.js'
 import { API_KEY, bootApi, fonts, openZip, type BootedApi } from './helpers.js'

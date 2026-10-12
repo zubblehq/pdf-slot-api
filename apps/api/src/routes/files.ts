@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { fileIdSchema, fileMetaSchema, putFileMetaSchema } from '@pdf-slot/contracts'
+import { fileIdSchema, fileMetaSchema, putFileMetaSchema } from '@pdf-slot/core/contracts'
 import type { AppEnv } from '../app.js'
 import { ApiError, notFound } from '../errors.js'
 import { deleteFile, getFileMeta, listFiles, upsertFile } from '../db/files.js'

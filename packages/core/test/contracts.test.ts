@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createJobRequestSchema, fileIdSchema, fileMetaSchema, jobStatusSchema, storedFileSummarySchema, templateLayoutSchema,
   MAX_JOB_RECORDS,
-} from '../src/index.js'
+} from '../src/contracts/index.js'
 
 const slot = {
   id: 's1', name: 'Date', order: 0, page: 0, x: 10, y: 700, width: 200,

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
-import type { JobRecord, JobStatus } from '@pdf-slot/contracts'
+import type { JobRecord, JobStatus } from '@pdf-slot/core/contracts'
 import { iso, type Db } from './client.js'
 import { jobItems, jobs } from './schema.js'
 

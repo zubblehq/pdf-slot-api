@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import type { FileId, StoredFile, TemplateLayout, TemplateValues } from '@pdf-slot/core'
-import { apiErrorSchema, fileMetaSchema, storedFileSummarySchema, templateLayoutSchema, templateValuesSchema } from '@pdf-slot/contracts'
+import { apiErrorSchema, fileMetaSchema, storedFileSummarySchema, templateLayoutSchema, templateValuesSchema } from '@pdf-slot/core/contracts'
 import type { StoredFileSummary, TemplateStore } from './template-store'
 
 let hasWarned = false

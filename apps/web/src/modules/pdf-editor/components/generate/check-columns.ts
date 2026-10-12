@@ -1,4 +1,4 @@
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 import { parseRecords } from './parse-records'
 
 /** A table a record can address: its name, what its columns are called, and how many lines it has. */

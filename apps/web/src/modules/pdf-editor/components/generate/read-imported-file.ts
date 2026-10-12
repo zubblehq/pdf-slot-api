@@ -1,4 +1,4 @@
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 import { IMPORTABLE_NAME, MAX_IMPORT_MB, MB } from './generate.constants'
 import { parseRecords } from './parse-records'
 

@@ -33,7 +33,7 @@ export const renderOnCommit: boolean = import.meta.env.VITE_RENDER_ON_COMMIT ===
  * is pinned to, injected at build time.
  *
  * Sent with every job so the server can refuse one when the two sides do not
- * match; see CORE_VERSION_HEADER in @pdf-slot/contracts for why they can
+ * match; see CORE_VERSION_HEADER in @pdf-slot/core/contracts for why they can
  * diverge. Unset means the check is off, which is right in a single checkout:
  * there is one copy of core and nothing to compare.
  */

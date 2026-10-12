@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
-import { templateLayoutSchema, templateValuesSchema } from '@pdf-slot/contracts'
+import { templateLayoutSchema, templateValuesSchema } from '@pdf-slot/core/contracts'
 import type { AppEnv } from '../app.js'
 import { ApiError, notFound } from '../errors.js'
 import { getFileMeta } from '../db/files.js'

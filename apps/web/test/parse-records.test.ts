@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { MAX_JOB_RECORDS } from '@pdf-slot/contracts'
+import { MAX_JOB_RECORDS } from '@pdf-slot/core/contracts'
 import { parseRecords } from '@/modules/pdf-editor/components/generate/parse-records'
 
 describe('parseRecords', () => {

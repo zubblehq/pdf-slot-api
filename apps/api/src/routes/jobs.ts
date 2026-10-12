@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { bearerAuth } from 'hono/bearer-auth'
 import { zValidator } from '@hono/zod-validator'
-import { CORE_VERSION_HEADER, CORE_VERSION_MISMATCH, coreVersionsAgree, createJobRequestSchema } from '@pdf-slot/contracts'
+import { CORE_VERSION_HEADER, CORE_VERSION_MISMATCH, coreVersionsAgree, createJobRequestSchema } from '@pdf-slot/core/contracts'
 import type { AppEnv } from '../app.js'
 import { ApiError, notFound } from '../errors.js'
 import { getFileMeta } from '../db/files.js'

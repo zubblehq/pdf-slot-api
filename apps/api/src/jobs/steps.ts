@@ -1,5 +1,5 @@
 import { createFontMetrics, describeUnsupportedCharacters, findUnsupportedSlots, normalizePdf, renderPdf, toSlots, type EditorDocument, type FontBytes, type FontId, type FontMetrics, type TemplateLayout } from '@pdf-slot/core'
-import { JOB_BATCH_SIZE } from '@pdf-slot/contracts'
+import { JOB_BATCH_SIZE } from '@pdf-slot/core/contracts'
 import { FatalError } from 'workflow'
 import { readAll } from '../blob/blobStore.js'
 import { getFileMeta } from '../db/files.js'

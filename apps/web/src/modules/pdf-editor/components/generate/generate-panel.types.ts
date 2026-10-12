@@ -1,4 +1,4 @@
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 import type { FillTargets } from './check-columns'
 
 /**

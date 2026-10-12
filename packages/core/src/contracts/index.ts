@@ -1,8 +1,22 @@
 import { z } from 'zod'
-import { defaultTableName, uniqueTableName } from '@pdf-slot/core'
-import type { FileId, PageSize, StoredFile, StoredTable, TableStyle, TemplateLayout, TemplateSlot, TemplateValues } from '@pdf-slot/core'
+import { defaultTableName, uniqueTableName } from '../index.js'
+import type { FileId, PageSize, StoredFile, StoredTable, TableStyle, TemplateLayout, TemplateSlot, TemplateValues } from '../index.js'
 
-/** Request/response shapes shared by the API and the web client -- one source of truth, validated on both sides. */
+/**
+ * Request/response shapes shared by the API and the web client -- one source
+ * of truth, validated on both sides.
+ *
+ * In this package rather than beside it, reached as
+ * `@pdf-slot/core/contracts`, because it describes core's own types and
+ * carries the header that says which core a caller is running. As a package of
+ * its own it would need a dependency on core, and that dependency would be **a
+ * second pin**: two specs that both have to name the same commit, and a bundle
+ * holding two copies of the geometry on the day they do not. One package
+ * cannot disagree with itself.
+ *
+ * It is a subpath, not part of the main entry, so code that only needs the
+ * maths does not pull zod in with it.
+ */
 
 export const MAX_JOB_RECORDS = 5000
 export const JOB_BATCH_SIZE = 25

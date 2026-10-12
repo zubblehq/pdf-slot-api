@@ -1,6 +1,6 @@
 import { boolean, integer, jsonb, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
 import type { TemplateTable, PageSize, TemplateSlot } from '@pdf-slot/core'
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

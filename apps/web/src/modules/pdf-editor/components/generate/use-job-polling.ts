@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { JobStatus } from '@pdf-slot/contracts'
+import type { JobStatus } from '@pdf-slot/core/contracts'
 import { fetchJob } from './jobs-client'
 
 const INTERVAL_MS = 2000

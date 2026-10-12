@@ -1,5 +1,5 @@
 import { desc, eq, sql } from 'drizzle-orm'
-import type { FileMeta, StoredFileSummary } from '@pdf-slot/contracts'
+import type { FileMeta, StoredFileSummary } from '@pdf-slot/core/contracts'
 import { iso, type Db } from './client.js'
 import { files, layouts } from './schema.js'
 

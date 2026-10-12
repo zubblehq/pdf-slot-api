@@ -3,6 +3,10 @@
 The maths that decides where every character goes on the page: text wrapping,
 glyph positions, PDF coordinates, table geometry, and the renderer itself.
 
+It also carries the wire format between the editor and its API, as
+`@pdf-slot/core/contracts` -- see "The contracts subpath" below for why that
+is here and not beside it.
+
 ## Why this package exists separately
 
 Two programs run this code. The browser runs it to draw the preview the user
@@ -28,6 +32,22 @@ A check that those two lines match belongs in CI. A runtime check that the
 browser and the server report the same version belongs in the service — the
 first catches a mistake at build time, the second catches a half-finished
 deploy.
+
+## The contracts subpath
+
+`@pdf-slot/core/contracts` holds the zod schemas for everything that crosses
+the wire -- a layout, a file's metadata, a bulk job -- plus
+`CORE_VERSION_HEADER` and `coreVersionsAgree`, the guard described above.
+
+It was a package of its own once, and that was a mistake. A separate package
+has to depend on this one, and that dependency is **a second pin**: two specs
+that both have to name the same commit, and an install with two copies of the
+geometry on the day they do not. The exact failure this arrangement exists to
+prevent, reintroduced by the arrangement. One package cannot disagree with
+itself.
+
+It is a subpath rather than part of the main entry so that code wanting only
+the maths does not pull zod in with it.
 
 ## It ships as TypeScript, on purpose
 
@@ -62,7 +82,7 @@ and for the tests that check glyph positions. Regenerate with
 
 ## Tests
 
-170 of them, and they are the reason this package can be changed safely. The
+179 of them, and they are the reason this package can be changed safely. The
 ones that matter most build a real PDF, read the glyph coordinates back out of
 its content stream, and compare them against what `layoutText` predicted —
 `test/invariant.test.ts`. If that fails, the preview no longer matches the

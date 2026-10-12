@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { JobRecord } from '@pdf-slot/contracts'
+import type { JobRecord } from '@pdf-slot/core/contracts'
 
 /**
  * Putting one record of the data on the page, and stepping through them.

@@ -11,7 +11,7 @@ export type Config = {
    * Optional, and absent means the check is off. In a single checkout there is
    * one copy of core and nothing to compare; it earns its keep only once the
    * browser and this service are deployed separately. See CORE_VERSION_HEADER
-   * in @pdf-slot/contracts.
+   * in @pdf-slot/core/contracts.
    */
   coreVersion?: string
 }

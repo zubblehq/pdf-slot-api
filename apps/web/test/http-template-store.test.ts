@@ -103,7 +103,7 @@ describe('HttpTemplateStore', () => {
   })
 
   it('layout/values/list/delete map to their routes; a network failure never rejects', async () => {
-    // `templateLayoutSchema.updatedAt` is `z.iso.datetime()` in @pdf-slot/contracts (fix(api):
+    // `templateLayoutSchema.updatedAt` is `z.iso.datetime()` in @pdf-slot/core/contracts (fix(api):
     // reject non-ISO timestamps at the boundary), so the fixture used for the `getLayout`
     // round-trip must be a real ISO datetime, not the 't' placeholder used elsewhere in this
     // file for fields the schema doesn't validate as datetimes.

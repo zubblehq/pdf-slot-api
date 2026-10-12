@@ -1,5 +1,5 @@
 import Papa, { type ParseError } from 'papaparse'
-import { MAX_JOB_RECORDS, type JobRecord, type JobTableRows } from '@pdf-slot/contracts'
+import { MAX_JOB_RECORDS, type JobRecord, type JobTableRows } from '@pdf-slot/core/contracts'
 
 export type ParsedRecords = { records: JobRecord[] } | { error: string }
 

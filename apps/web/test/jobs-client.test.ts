@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test'
 import { createJob, fetchJob } from '@/modules/pdf-editor/components/generate/jobs-client'
-import type { JobStatus } from '@pdf-slot/contracts'
+import type { JobStatus } from '@pdf-slot/core/contracts'
 import { stubGlobal, unstubAllGlobals } from './bun/stub-globals'
 
 const fileId = 'a'.repeat(64)

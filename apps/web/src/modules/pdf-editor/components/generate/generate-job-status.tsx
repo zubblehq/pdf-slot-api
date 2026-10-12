@@ -1,6 +1,6 @@
 import { Button } from '@/app/components/ui/button'
 import { Progress } from '@/app/components/ui/progress'
-import type { JobStatus } from '@pdf-slot/contracts'
+import type { JobStatus } from '@pdf-slot/core/contracts'
 import { zipUrl } from './jobs-client'
 
 /**
