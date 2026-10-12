@@ -4,6 +4,7 @@ import type { JobStatus } from '@pdf-slot/core/contracts'
 import { requireContentStreamText } from '../../../../packages/core/test/helpers/content-stream.js'
 import { FILE_ID, putTestFile, slot, twoPagePdf } from '../helpers/fixtures.js'
 import { API_KEY, bootApi, fonts, openZip, type BootedApi } from './helpers.js'
+import { itemPath, sourcePath, zipPath } from '../../src/blob/paths.js'
 
 const UPDATED_AT = '2026-09-19T00:00:00.000Z'
 const jsonHeaders = { 'Content-Type': 'application/json' }
@@ -136,7 +137,12 @@ describe('API end to end: upload -> layout -> values -> job -> generation -> zip
 
     await api.runJob(jobId)
     expect(await getJob(api, jobId)).toMatchObject({ status: 'done', done: 1 })
-    expect(api.deps.blobs.paths().sort()).toEqual([`files/${FILE_ID}.pdf`, `jobs/${jobId}/all.zip`, `jobs/${jobId}/record-0001.pdf`])
+    // Built, not spelled out: these are the paths the service chose, and the
+    // folder they sit under is a deployment fact (blob/paths.ts) rather than
+    // something this test gets a say in.
+    expect(api.deps.blobs.paths().sort()).toEqual(
+      [sourcePath(FILE_ID), zipPath(jobId), itemPath(jobId, 0)].sort(),
+    )
 
     expect((await api.app.request(`/files/${FILE_ID}`, { method: 'DELETE' })).status).toBe(204)
     expect(api.deps.blobs.paths()).toEqual([])

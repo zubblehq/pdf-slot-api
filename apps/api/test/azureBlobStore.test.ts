@@ -2,6 +2,7 @@ import { ContainerClient } from '@azure/storage-blob'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createAzureBlobStore } from '../src/blob/azureBlobStore.js'
 import { readAll } from '../src/blob/blobStore.js'
+import { BLOB_PREFIX } from '../src/blob/paths.js'
 
 /**
  * The Azure store against Azurite, Microsoft's own emulator -- the real
@@ -32,9 +33,14 @@ const EMULATOR =
  * Against a real one the container is somebody else's: it is not created
  * and never deleted, every blob goes under a prefix of its own, and that
  * prefix is removed at the end.
+ *
+ * That prefix sits inside `pdf/` like everything else, because the store now
+ * refuses a path that does not (see blob/paths.ts). Against Azurite the
+ * container is ours and thrown away, but the paths still need the folder, so
+ * both runs use it.
  */
 const REAL_SAS = process.env.AZURE_TEST_SAS_URL
-const PREFIX = REAL_SAS ? `_test-${Date.now()}/` : ''
+const PREFIX = `${BLOB_PREFIX}/_test-${Date.now()}/`
 
 const reachable = REAL_SAS
   ? true
@@ -59,6 +65,28 @@ describe.skipIf(!reachable)(`azure blob store (${REAL_SAS ? 'against a real cont
     const left: string[] = []
     for await (const blob of container.listBlobsFlat({ prefix: PREFIX })) left.push(blob.name)
     await Promise.all(left.map((name) => container.getBlobClient(name).deleteIfExists()))
+  })
+
+  it('refuses a path outside the folder this service owns', async () => {
+    // The container is shared with Elli's own files, and a container SAS can
+    // write anywhere in it. These are the three ways a wrong path arrives:
+    // no prefix at all, somebody else's prefix, and ours with a climb out.
+    for (const path of ['elli/invoices/x.pdf', 'x.pdf', `${BLOB_PREFIX}/../elli/x.pdf`]) {
+      await expect(store.put(path, new Uint8Array([1]), 'application/pdf')).rejects.toThrow(
+        /outside pdf\/|escapes pdf\//,
+      )
+      await expect(store.get(path)).rejects.toThrow(/outside pdf\/|escapes pdf\//)
+      await expect(store.delete([path])).rejects.toThrow(/outside pdf\/|escapes pdf\//)
+    }
+  })
+
+  it('a batch delete with one foreign path in it deletes nothing', async () => {
+    // The dangerous shape: a list read out of the database, mostly ours.
+    // Checking as it goes would delete the ours-looking half first.
+    await blobs.put('batch.pdf', new Uint8Array([5]), 'application/pdf')
+    await expect(store.delete([`${PREFIX}batch.pdf`, 'elli/keep.pdf'])).rejects.toThrow()
+    expect(await blobs.get('batch.pdf')).not.toBeNull()
+    await blobs.delete(['batch.pdf'])
   })
 
   it('stores bytes and streams, reads them back with the content type, deletes', async () => {

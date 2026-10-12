@@ -1,5 +1,6 @@
 import { ContainerClient, RestError } from '@azure/storage-blob'
 import { readAll, type BlobStore } from './blobStore.js'
+import { assertOwnedPath } from './paths.js'
 
 /**
  * Azure Blob Storage.
@@ -10,6 +11,12 @@ import { readAll, type BlobStore } from './blobStore.js'
  * held anywhere. The SAS has to allow create, write, read and delete; a
  * read-only one (`sp=r`) answers every upload with 403
  * AuthorizationPermissionMismatch, and listing needs `l` on top of `r`.
+ *
+ * **This container is shared.** Elli stores its own files in it, so every
+ * path is checked against `pdf/` before it is used (see `paths.ts`). The SAS
+ * does not narrow the scope for us -- a container SAS can write and delete
+ * anywhere in the container -- so the only thing standing between a wrong
+ * path and someone else's data is this check.
  */
 export function createAzureBlobStore(container: ContainerClient): BlobStore {
   return {
@@ -19,6 +26,7 @@ export function createAzureBlobStore(container: ContainerClient): BlobStore {
       // step may write a blob it has already written. Azure overwrites by
       // default, which is what the disk and memory stores do and what
       // their tests pin.
+      assertOwnedPath(path)
       const bytes = body instanceof Uint8Array ? body : await readAll(body)
       await container.getBlockBlobClient(path).uploadData(bytes, {
         blobHTTPHeaders: { blobContentType: contentType },
@@ -26,6 +34,7 @@ export function createAzureBlobStore(container: ContainerClient): BlobStore {
     },
 
     async get(path) {
+      assertOwnedPath(path)
       let result
       try {
         result = await container.getBlobClient(path).download()
@@ -47,6 +56,10 @@ export function createAzureBlobStore(container: ContainerClient): BlobStore {
     },
 
     async delete(paths) {
+      // Every path first, before a single call goes out: a batch that is
+      // part ours and part not must delete nothing at all, rather than
+      // delete the ours-looking half and then throw.
+      for (const path of paths) assertOwnedPath(path)
       // deleteIfExists, so removing a file whose blobs were already
       // cleaned up is not an error -- the disk store ignores misses too.
       await Promise.all(paths.map((path) => container.getBlobClient(path).deleteIfExists()))

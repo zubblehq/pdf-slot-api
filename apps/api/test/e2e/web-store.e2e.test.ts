@@ -8,6 +8,7 @@ import { createHttpTemplateStore } from '@/modules/pdf-editor/api/persistence/ht
 import { templateStore as idb } from '@/modules/pdf-editor/api/persistence/indexed-db-template-store'
 import { FILE_ID, slot, twoPagePdf } from '../helpers/fixtures.js'
 import { API_URL, bootApi, fonts } from './helpers.js'
+import { sourcePath } from '../../src/blob/paths.js'
 
 const UPDATED_AT = '2026-09-19T00:00:00.000Z'
 const CREATED_AT = '2026-09-19T00:00:00.000Z'
@@ -70,7 +71,7 @@ describe('web persistence end to end: the real store code against the real API, 
     expect(first.values).toBeNull()
     expect(first.fileId).toMatch(/^[0-9a-f]{64}$/)
     expect((await store.listFiles()).map((f) => [f.fileId, f.name, f.pageCount, f.slotCount])).toEqual([[first.fileId, 'form.pdf', 2, 0]])
-    expect(api.deps.blobs.paths()).toEqual([`files/${first.fileId}.pdf`])
+    expect(api.deps.blobs.paths()).toEqual([sourcePath(first.fileId)])
 
     // Laid out on the server: the same bytes open with that layout.
     const layout = oneSlotLayout(first.fileId)

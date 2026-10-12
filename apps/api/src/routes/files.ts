@@ -4,8 +4,8 @@ import type { AppEnv } from '../app.js'
 import { ApiError, notFound } from '../errors.js'
 import { deleteFile, getFileMeta, listFiles, upsertFile } from '../db/files.js'
 import { listJobBlobPathsForFile } from '../db/jobs.js'
+import { sourcePath } from '../blob/paths.js'
 
-export const sourcePath = (fileId: string) => `files/${fileId}.pdf`
 
 /** Path param -> validated file id, or 400. */
 export function fileIdParam(raw: string): string {

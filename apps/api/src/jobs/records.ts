@@ -3,6 +3,6 @@
 // what is generated.
 export { recordToValues } from '@pdf-slot/core'
 
-export const itemFileName = (index: number) => `record-${String(index + 1).padStart(4, '0')}.pdf`
-export const itemPath = (jobId: string, index: number) => `jobs/${jobId}/${itemFileName(index)}`
-export const zipPath = (jobId: string) => `jobs/${jobId}/all.zip`
+// The paths these used to build live in blob/paths.ts, with the folder every
+// one of them has to sit under and the check that they do.
+export { itemFileName, itemPath, zipPath } from '../blob/paths.js'
