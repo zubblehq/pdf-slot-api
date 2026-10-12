@@ -1,0 +1,29 @@
+# Everything the image does not need, so the build context is small and a
+# stray local file cannot end up inside it.
+node_modules
+**/node_modules
+.git
+.github
+dist
+.blobs
+**/*.log
+
+# The editor is a separate deployment (it lives in elli-ui now); only its
+# package.json is copied, for the workspace resolution.
+apps/web/src
+apps/web/public
+apps/web/test
+apps/web/index.html
+
+# Tests and tooling are not in the runtime image.
+**/test
+**/*.test.ts
+**/vitest.config.ts
+**/vitest.e2e.config.ts
+**/eslint.config.mjs
+
+# Never: local environment files, and the agent instructions.
+.env
+.env.*
+CLAUDE.md
+questions-for-pm.md
