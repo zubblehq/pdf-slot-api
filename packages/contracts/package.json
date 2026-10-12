@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pdf-slot/core": "^0.0.0",
+    "@pdf-slot/core": "*",
     "zod": "^4.6.5"
   },
   "devDependencies": {
