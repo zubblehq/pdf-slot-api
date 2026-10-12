@@ -20,7 +20,7 @@ LOGS="${TMPDIR:-/tmp}/pdfslot-dev"
 mkdir -p "$LOGS"
 
 if [ "${1:-}" = "stop" ]; then
-  pkill -f 'nitro dev' 2>/dev/null || true
+  pkill -f 'bun --watch src/index.ts' 2>/dev/null || true
   pkill -f 'vite --port 5173' 2>/dev/null || true
   docker rm -f pdfslot-pg > /dev/null 2>&1 || true
   echo "stopped"
@@ -52,8 +52,11 @@ if ! docker ps --filter name=pdfslot-pg --format '{{.Names}}' | grep -q pdfslot-
   (cd "$ROOT/apps/api" && npm run db:migrate > "$LOGS/migrate.log" 2>&1) && echo "migrations applied"
 fi
 
-pkill -f 'nitro dev' 2>/dev/null || true
-pkill -f 'next dev -p 5173' 2>/dev/null || true
+# The API is `bun --watch src/index.ts` since it left Nitro; the old
+# pattern matched nothing, so a previous run's API stayed up and the new one
+# found :3000 taken.
+pkill -f 'bun --watch src/index.ts' 2>/dev/null || true
+pkill -f 'vite --port 5173' 2>/dev/null || true
 sleep 2
 
 cd "$ROOT/apps/api"
