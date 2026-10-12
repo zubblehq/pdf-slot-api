@@ -25,13 +25,45 @@ versions while both look correct, which is precisely the failure this
 arrangement exists to prevent.
 
 ```json
-"@pdf-slot/core": "github:zubblehq/pdf-core#7f3a901"
+"@pdf-slot/core": "git+ssh://git@github.com/zubblehq/pdf-core.git#cdc8204"
 ```
+
+`git+ssh`, not the `github:` shorthand: `bun install` attaches no credentials
+to the tarball URL it builds for `github:`, so a private repository 404s under
+that form no matter how `GITHUB_TOKEN` is set. Over SSH it works with whatever
+key already has access, which on a build host means a read-only deploy key.
 
 A check that those two lines match belongs in CI. A runtime check that the
 browser and the server report the same version belongs in the service — the
 first catches a mistake at build time, the second catches a half-finished
 deploy.
+
+## Where this repository comes from
+
+This package is developed inside `pdf-slot-design`, as `packages/core`,
+because the tests of both its consumers live there and a change to the
+geometry has to be run against both in one go. `zubblehq/pdf-core` is that
+directory, published:
+
+```sh
+# from the root of pdf-slot-design
+git subtree split -P packages/core -b pdf-core-export
+git push git@github.com:zubblehq/pdf-core.git pdf-core-export:main
+git rev-parse pdf-core-export   # the commit to pin
+```
+
+`subtree split` keeps this directory's own history, so the published
+repository has real commits rather than one squashed import, and pushing again
+later continues that history instead of replacing it.
+
+**The discipline this asks for.** The monorepo copy is the source; the
+published one is a mirror, and a mirror can be stale. So a change to the
+geometry is not finished when its tests pass — it is finished when it has
+been pushed here and every consumer's pin has moved to the new commit, in the
+same breath. Leave a pin behind and the browser and the server are running
+different maths, which is the one failure this package exists to prevent. The
+runtime guard (`CORE_VERSION_HEADER`) is what catches the day someone
+forgets; it is a net, not a substitute.
 
 ## The contracts subpath
 
