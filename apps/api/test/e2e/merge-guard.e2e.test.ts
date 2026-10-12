@@ -7,8 +7,8 @@ import { normalizePdf, renderPdf, toSlots, type TemplateLayout } from '@pdf-slot
 import { templateLayoutSchema, templateSlotSchema } from '@pdf-slot/contracts'
 import { openFile } from '@/modules/pdf-editor/lib/open-file'
 import { selectStores } from '@/modules/pdf-editor/api/persistence'
-import { createHttpTemplateStore } from '@/modules/pdf-editor/api/persistence/httpTemplateStore'
-import { templateStore as idb } from '@/modules/pdf-editor/api/persistence/indexedDbTemplateStore'
+import { createHttpTemplateStore } from '@/modules/pdf-editor/api/persistence/http-template-store'
+import { templateStore as idb } from '@/modules/pdf-editor/api/persistence/indexed-db-template-store'
 import { requireContentStreamText } from '../../../../packages/core/test/helpers/content-stream.js'
 import { FILE_ID, putTestFile, slot, twoPagePdf } from '../helpers/fixtures.js'
 import { API_KEY, API_URL, bootApi, fonts, openZip, type BootedApi, type FetchLike } from './helpers.js'
@@ -130,9 +130,9 @@ describe('merge guard: the backend stays wired to the app', () => {
     const page = readFileSync(webSrc('App.tsx'), 'utf8')
     expect(
       page,
-      "page.tsx must read its store from '@/modules/pdf-editor/api/persistence' (the selector), not from a store module directly.",
+      "App.tsx must read its store from '@/modules/pdf-editor/api/persistence' (the selector), not from a store module directly.",
     ).toMatch(/from '@\/modules\/pdf-editor\/api\/persistence'/)
-    expect(page).not.toMatch(/from '@\/modules\/pdf-editor\/api\/persistence\/indexedDbTemplateStore'/)
+    expect(page).not.toMatch(/from '@\/modules\/pdf-editor\/api\/persistence\/indexed-db-template-store'/)
 
     const api = await bootApi()
     vi.stubGlobal('fetch', api.fetchViaApp)

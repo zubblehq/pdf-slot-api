@@ -1,4 +1,4 @@
-import type { ColumnCheck } from './checkColumns'
+import type { ColumnCheck } from './check-columns'
 
 export const MB = 1024 * 1024
 

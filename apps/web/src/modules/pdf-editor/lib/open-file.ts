@@ -2,8 +2,8 @@ import {
   normalizePdf, readSourceStamp, tableFromStored,
   type EditorDocument, type FileId, type TemplateLayout, type TemplateValues,
 } from '@pdf-slot/core'
-import { hashBytes, isFileId, randomId } from '@/modules/pdf-editor/lib/files/fileHash'
-import type { TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import { hashBytes, isFileId, randomId } from '@/modules/pdf-editor/lib/files/file-hash'
+import type { TemplateStore } from '@/modules/pdf-editor/api/persistence/template-store'
 
 export type OpenedFile = {
   doc: EditorDocument

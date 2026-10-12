@@ -1,0 +1,104 @@
+import { afterEach, describe, expect, it, jest, spyOn } from 'bun:test'
+import { decodeImage } from '@/modules/pdf-editor/components/upload/decode-image'
+import { stubGlobal, unstubAllGlobals } from './bun/stub-globals'
+
+/**
+ * jsdom implements neither `createImageBitmap` (undefined globally) nor a
+ * real 2d canvas backend (`getContext('2d')` resolves to `null`, and
+ * `toBlob` is a documented no-op that never invokes its callback -- see
+ * https://github.com/jsdom/jsdom#canvas-support). Both are stubbed by hand
+ * below rather than pulling in the `canvas` native package, and each stub
+ * is asserted against directly (e.g. `drawImage` was called with the
+ * decoded bitmap) so the test fails if decodeImage stops doing real work.
+ */
+
+function stubToBlob(blob: Blob | null) {
+  return spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+    callback(blob)
+  })
+}
+
+afterEach(() => {
+  jest.restoreAllMocks()
+  unstubAllGlobals()
+})
+
+describe('decodeImage', () => {
+  it('draws the decoded bitmap onto a canvas sized to it, and returns its PNG bytes', async () => {
+    const bitmap = { width: 40, height: 20, close: jest.fn() }
+    stubGlobal(
+      'createImageBitmap',
+      jest.fn(async () => bitmap),
+    )
+
+    const drawImage = jest.fn()
+    spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+    } as unknown as CanvasRenderingContext2D)
+
+    const pngBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
+    stubToBlob(new Blob([pngBytes]))
+
+    const file = new File([new Uint8Array([0])], 'photo.webp', { type: 'image/webp' })
+    const result = await decodeImage(file)
+
+    // The specific bitmap decoded, not just "some object", was drawn.
+    expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0)
+    expect(result.format).toBe('png')
+    expect(result.width).toBe(40)
+    expect(result.height).toBe(20)
+    expect(Array.from(result.bytes)).toEqual(Array.from(pngBytes))
+    // The decoded bitmap holds off-heap/GPU pixel memory; it must be
+    // released once decodeImage is done with it, success or not.
+    expect(bitmap.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects with a clear message when the browser cannot decode the format', async () => {
+    stubGlobal(
+      'createImageBitmap',
+      jest.fn(async () => {
+        throw new Error('unsupported')
+      }),
+    )
+
+    const file = new File([new Uint8Array([0])], 'photo.heic', { type: 'image/heic' })
+    await expect(decodeImage(file)).rejects.toThrow(
+      'This browser cannot read that image format.',
+    )
+  })
+
+  it('rejects when a 2d canvas context is unavailable, and still releases the bitmap', async () => {
+    const bitmap = { width: 1, height: 1, close: jest.fn() }
+    stubGlobal(
+      'createImageBitmap',
+      jest.fn(async () => bitmap),
+    )
+    // Not mocked: jsdom's own getContext('2d') already returns null.
+
+    const file = new File([new Uint8Array([0])], 'photo.png', { type: 'image/png' })
+    await expect(decodeImage(file)).rejects.toThrow(
+      'Could not create a canvas to read the image.',
+    )
+    // The bitmap was successfully decoded before this failure -- an
+    // implementation that only calls close() on the return statement below
+    // (rather than in a finally) would leak it here. This is the case that
+    // matters: it is the one a scattered close() would miss.
+    expect(bitmap.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects when the canvas cannot produce a blob, and still releases the bitmap', async () => {
+    const bitmap = { width: 1, height: 1, close: jest.fn() }
+    stubGlobal(
+      'createImageBitmap',
+      jest.fn(async () => bitmap),
+    )
+    spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: jest.fn(),
+    } as unknown as CanvasRenderingContext2D)
+    stubToBlob(null)
+
+    const file = new File([new Uint8Array([0])], 'photo.png', { type: 'image/png' })
+    await expect(decodeImage(file)).rejects.toThrow('Could not convert the image.')
+    expect(bitmap.close).toHaveBeenCalledTimes(1)
+  })
+})

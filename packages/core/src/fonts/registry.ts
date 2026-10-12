@@ -52,7 +52,7 @@ export const FONT_LABELS: Record<FontId, string> = {
  * version, different metrics -- while the export used the bytes in ./files.
  * The preview would drift from the download with nothing on screen to say
  * so. A name no system font can claim makes the registered bytes the only
- * thing that can match (see apps/web/src/lib/fonts/loadFonts.ts).
+ * thing that can match (see apps/web/src/modules/pdf-editor/lib/fonts/load-fonts.ts).
  */
 export const FONT_CSS_FAMILY: Record<FontId, string> = {
   sans: 'PdfSlotSans',

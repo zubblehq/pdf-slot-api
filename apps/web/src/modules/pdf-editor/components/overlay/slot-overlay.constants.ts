@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { ResizeEdge } from './dragGeometry'
+import type { ResizeEdge } from './drag-geometry'
 
 /**
  * The fixed sizes and the one shape SlotOverlay's pieces share.

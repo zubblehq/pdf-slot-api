@@ -1,0 +1,106 @@
+import { afterEach, beforeEach, describe, expect, it, jest } from 'bun:test'
+import { FONT_CSS_FAMILY, FONT_FILES, FONT_IDS } from '@pdf-slot/core'
+import { forgetLoadedFonts } from '@/modules/pdf-editor/lib/fonts/load-fonts'
+import { stubGlobal, unstubAllGlobals } from './bun/stub-globals'
+
+/**
+ * jsdom does not implement the CSS Font Loading API (`FontFace`,
+ * `document.fonts`), so registerFontFaces() is exercised against a minimal
+ * stand-in rather than the real browser API.
+ */
+class FakeFontFace {
+  family: string
+  source: unknown
+  constructor(family: string, source: unknown) {
+    this.family = family
+    this.source = source
+  }
+  async load() {
+    return this
+  }
+}
+
+function makeResponse(ok: boolean, bytes: Uint8Array = new Uint8Array([1, 2, 3, 4])): Response {
+  return {
+    ok,
+    arrayBuffer: async () => bytes.buffer,
+  } as unknown as Response
+}
+
+describe('loadFonts', () => {
+  let fontsAdd: ReturnType<typeof jest.fn>
+
+  beforeEach(() => {
+    // The module memoises `cache` at module scope, and bun:test has no
+    // module-registry reset, so the loader is asked to forget instead.
+    // The dynamic imports below then get a clean, un-memoised loader.
+    forgetLoadedFonts()
+    fontsAdd = jest.fn()
+    stubGlobal('FontFace', FakeFontFace)
+    stubGlobal('document', { fonts: { add: fontsAdd } })
+  })
+
+  afterEach(() => {
+    unstubAllGlobals()
+    jest.restoreAllMocks()
+  })
+
+  it('fetches all five ids and returns non-empty bytes for each', async () => {
+    const fetchMock = jest.fn(async () => makeResponse(true))
+    stubGlobal('fetch', fetchMock)
+
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/load-fonts')
+    const bytes = await loadFontBytes()
+
+    expect(fetchMock).toHaveBeenCalledTimes(FONT_IDS.length)
+    for (const id of FONT_IDS) {
+      expect(fetchMock).toHaveBeenCalledWith(`/fonts/${FONT_FILES[id]}`)
+      expect(bytes[id]).toBeInstanceOf(Uint8Array)
+      expect(bytes[id].byteLength).toBeGreaterThan(0)
+    }
+  })
+
+  it('registerFontFaces adds one face per id, named per FONT_CSS_FAMILY', async () => {
+    const fetchMock = jest.fn(async () => makeResponse(true))
+    stubGlobal('fetch', fetchMock)
+
+    const { loadFontBytes, registerFontFaces } = await import('@/modules/pdf-editor/lib/fonts/load-fonts')
+    const bytes = await loadFontBytes()
+    await registerFontFaces(bytes)
+
+    expect(fontsAdd).toHaveBeenCalledTimes(FONT_IDS.length)
+    const registeredFamilies = fontsAdd.mock.calls.map(([face]) => (face as FakeFontFace).family)
+    for (const id of FONT_IDS) {
+      expect(registeredFamilies).toContain(FONT_CSS_FAMILY[id])
+    }
+  })
+
+  it('a failed fetch surfaces a useful error naming which font failed', async () => {
+    const fetchMock = jest.fn(async (url: string) => makeResponse(!url.endsWith(FONT_FILES.mono)))
+    stubGlobal('fetch', fetchMock)
+
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/load-fonts')
+    await expect(loadFontBytes()).rejects.toThrow('Failed to load font mono')
+  })
+
+  it('retries after a transient failure instead of caching the rejection', async () => {
+    // `batch` is flipped by the test between calls, not by the mock itself,
+    // so the outcome does not depend on the scheduling order of the five
+    // concurrent fetches within a single loadFontBytes() call.
+    let batch: 'fail' | 'succeed' = 'fail'
+    const fetchMock = jest.fn(async () => makeResponse(batch === 'succeed'))
+    stubGlobal('fetch', fetchMock)
+
+    const { loadFontBytes } = await import('@/modules/pdf-editor/lib/fonts/load-fonts')
+
+    await expect(loadFontBytes()).rejects.toThrow('Failed to load font')
+
+    batch = 'succeed'
+    const bytes = await loadFontBytes()
+
+    expect(fetchMock).toHaveBeenCalledTimes(FONT_IDS.length * 2)
+    for (const id of FONT_IDS) {
+      expect(bytes[id].byteLength).toBeGreaterThan(0)
+    }
+  })
+})

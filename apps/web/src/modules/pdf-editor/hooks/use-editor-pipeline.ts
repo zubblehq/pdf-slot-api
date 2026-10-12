@@ -11,7 +11,7 @@ import {
   type FontMetrics,
   type Slot,
 } from '@pdf-slot/core'
-import { loadFontBytes, registerFontFaces } from '@/modules/pdf-editor/lib/fonts/loadFonts'
+import { loadFontBytes, registerFontFaces } from '@/modules/pdf-editor/lib/fonts/load-fonts'
 import { renderOnCommit } from '@/app/lib/env'
 import type { EditorStore } from '@/modules/pdf-editor/hooks/use-editor-store'
 import { useCommitRender } from '@/modules/pdf-editor/hooks/use-commit-render'

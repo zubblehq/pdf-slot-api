@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from 'bun:test'
 import { selectStores } from '@/modules/pdf-editor/api/persistence/index'
-import type { SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import type { SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/template-store'
 
 function fakeIdb(): TemplateStore & SessionStore {
   return {

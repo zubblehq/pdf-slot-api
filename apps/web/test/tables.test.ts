@@ -1,11 +1,11 @@
 import { createElement } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from 'bun:test'
-import { installFontFixtures } from './helpers/editorFixtures'
+import { installFontFixtures } from './helpers/editor-fixtures'
 import type { EditorDocument, Slot, TemplateLayout, TemplateValues } from '@pdf-slot/core'
-import type { OpenSession, SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/templateStore'
+import type { OpenSession, SessionStore, TemplateStore } from '@/modules/pdf-editor/api/persistence/template-store'
 import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
-import { stubGlobal, unstubAllGlobals } from './bun/stubGlobals'
+import { stubGlobal, unstubAllGlobals } from './bun/stub-globals'
 import * as actualCoreModule from '@pdf-slot/core'
 const actualCore = { ...actualCoreModule }
 
@@ -28,7 +28,7 @@ mock.module('@pdf-slot/core', () => ({
 }))
 
 mock.module('pdfjs-dist', async () => {
-  const { fakePdfjsDocument } = await import('./helpers/editorFixtures')
+  const { fakePdfjsDocument } = await import('./helpers/editor-fixtures')
   return { GlobalWorkerOptions: {}, getDocument: () => fakePdfjsDocument() }
 })
 

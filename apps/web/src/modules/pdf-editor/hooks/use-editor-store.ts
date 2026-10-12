@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { Align, FontId, Point, RGB, Slot, TemplateTable } from '@pdf-slot/core'
-import { randomId } from '@/modules/pdf-editor/lib/files/fileHash'
+import { randomId } from '@/modules/pdf-editor/lib/files/file-hash'
 import {
   applyAddSlot,
   applyCommitEdit,

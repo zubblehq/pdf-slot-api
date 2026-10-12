@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Toaster } from '@/app/components/ui/sonner'
-import { useSystemTheme } from '@/app/theme/useSystemTheme'
-import { Dropzone, type UploadedFile } from '@/modules/pdf-editor/components/upload/Dropzone'
-import { SavedFiles } from '@/modules/pdf-editor/components/files/SavedFiles'
+import { useSystemTheme } from '@/app/theme/use-system-theme'
+import { Dropzone, type UploadedFile } from '@/modules/pdf-editor/components/upload/dropzone'
+import { SavedFiles } from '@/modules/pdf-editor/components/files/saved-files'
 import type { OpenedFile } from '@/modules/pdf-editor/lib/open-file'
-import { isFileId } from '@/modules/pdf-editor/lib/files/fileHash'
+import { isFileId } from '@/modules/pdf-editor/lib/files/file-hash'
 import { templateStore } from '@/modules/pdf-editor/api/persistence'
 
 /**

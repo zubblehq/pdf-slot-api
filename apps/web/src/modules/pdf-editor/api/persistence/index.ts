@@ -1,7 +1,7 @@
 import { apiUrl } from '@/app/lib/env'
-import type { SessionStore, TemplateStore } from './templateStore'
-import { templateStore as indexedDb } from './indexedDbTemplateStore'
-import { createHttpTemplateStore } from './httpTemplateStore'
+import type { SessionStore, TemplateStore } from './template-store'
+import { templateStore as indexedDb } from './indexed-db-template-store'
+import { createHttpTemplateStore } from './http-template-store'
 
 /**
  * Which storage the app talks to. With an API URL, files/layouts/values go

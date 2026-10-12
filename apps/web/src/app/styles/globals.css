@@ -18,7 +18,7 @@
  *
  * `font-display: swap` so text paints in the fallback immediately rather than
  * waiting on the file. This is interface chrome only -- the faces that go
- * into a PDF are loaded by `lib/fonts/loadFonts.ts` and are not these.
+ * into a PDF are loaded by `lib/fonts/load-fonts.ts` and are not these.
  */
 @font-face {
   font-family: "Geist Sans";

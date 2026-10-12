@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, typ
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { toPdfPoint, type EditorDocument, type Point, type Slot, type TemplateTable, type Viewport } from '@pdf-slot/core'
 import { TooltipProvider } from '@/app/components/ui/tooltip'
-import { PageCanvas } from '@/modules/pdf-editor/components/canvas/PageCanvas'
+import { PageCanvas } from '@/modules/pdf-editor/components/canvas/page-canvas'
 import { toStagePoint, type StagePoint } from '@/modules/pdf-editor/components/canvas/coordinates'
-import { Ruler, RULER_THICKNESS } from '@/modules/pdf-editor/components/canvas/Ruler'
-import { useSpaceHeld } from '@/modules/pdf-editor/components/canvas/useSpaceHeld'
+import { Ruler, RULER_THICKNESS } from '@/modules/pdf-editor/components/canvas/ruler'
+import { useSpaceHeld } from '@/modules/pdf-editor/components/canvas/use-space-held'
 import {
   ZOOM_MAX,
   ZOOM_MIN,
@@ -15,15 +15,15 @@ import {
   zoomAtCentre,
   zoomAtPoint,
   type ViewState,
-} from '@/modules/pdf-editor/components/canvas/viewportMath'
+} from '@/modules/pdf-editor/components/canvas/viewport-math'
 import type { EditorStore } from '@/modules/pdf-editor/hooks/use-editor-store'
-import { SlotOverlay, type SlotNaming } from '@/modules/pdf-editor/components/overlay/SlotOverlay'
-import { layoutSlot } from '@/modules/pdf-editor/components/overlay/slotBox'
-import { PageControls } from '@/modules/pdf-editor/components/toolbar/PageControls'
-import { ZoomControls } from '@/modules/pdf-editor/components/toolbar/ZoomControls'
-import { TableDrawLayer } from '@/modules/pdf-editor/components/table/TableDrawLayer'
-import { TableOverlay, type TableDragPatch } from '@/modules/pdf-editor/components/table/TableOverlay'
-import type { DrawnRow } from '@/modules/pdf-editor/components/table/useTables'
+import { SlotOverlay, type SlotNaming } from '@/modules/pdf-editor/components/overlay/slot-overlay'
+import { layoutSlot } from '@/modules/pdf-editor/components/overlay/slot-box'
+import { PageControls } from '@/modules/pdf-editor/components/toolbar/page-controls'
+import { ZoomControls } from '@/modules/pdf-editor/components/toolbar/zoom-controls'
+import { TableDrawLayer } from '@/modules/pdf-editor/components/table/table-draw-layer'
+import { TableOverlay, type TableDragPatch } from '@/modules/pdf-editor/components/table/table-overlay'
+import type { DrawnRow } from '@/modules/pdf-editor/components/table/use-tables'
 import type { EditorPipeline } from '@/modules/pdf-editor/hooks/use-editor-pipeline'
 import { toast } from 'sonner'
 import { useEditorShortcuts } from '@/modules/pdf-editor/hooks/use-editor-shortcuts'

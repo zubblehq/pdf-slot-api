@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { renderPdf, renderPdfIncremental, type EditorDocument, type Slot } from '@pdf-slot/core'
-import { loadFontBytes } from '@/modules/pdf-editor/lib/fonts/loadFonts'
+import { loadFontBytes } from '@/modules/pdf-editor/lib/fonts/load-fonts'
 
 /**
  * Owns the real output PDF: renders it on demand (`render`, the download

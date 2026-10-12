@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { toLayout, toValues, type Slot } from '@pdf-slot/core'
-import type { useTables } from '@/modules/pdf-editor/components/table/useTables'
+import type { useTables } from '@/modules/pdf-editor/components/table/use-tables'
 
 /**
  * The document as everything outside the canvas sees it: what gets saved,
