@@ -27,6 +27,15 @@ export function readConfig(env: Record<string, string | undefined>): Config {
   // for a container on Azure.
   const blobDir = env.BLOB_DIR
   const azureBlobSasUrl = env.AZURE_BLOB_SAS_URL
+  // Both set is a mistake worth refusing to start over. `runtime.ts` picks
+  // the first of the two, so a BLOB_DIR left behind in a deployment's
+  // environment would quietly send production's bytes to a container's local
+  // disk -- where they are read back happily, and are gone the next time the
+  // container is replaced. There is no reading of "both" that is useful
+  // enough to guess at.
+  if (blobDir && azureBlobSasUrl) {
+    throw new Error('Set BLOB_DIR or AZURE_BLOB_SAS_URL, not both: they are two different places to put the same bytes')
+  }
   const missing = Object.values(VARS).filter((name) => {
     if (name === VARS.blobToken && (blobDir || azureBlobSasUrl)) return false
     return !env[name]

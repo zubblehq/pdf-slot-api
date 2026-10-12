@@ -1,0 +1,83 @@
+# The PDF slot service, as its own compose file.
+#
+# Its own, not a service added to elli-core's, because that is the arrangement
+# elli-core already documents for the engine it calls: "The engine lives in its
+# own repository with its own compose file; point this at wherever it actually
+# runs, on a network this service can reach." This is that file, for this
+# engine.
+#
+#   docker compose -f apps/api/docker-compose.yml up -d --build
+#
+# run from the repository root, because the image is built from there (see
+# Dockerfile).
+#
+# It joins `elli_network` rather than creating one, so Elli's API can reach
+# this service by name -- `http://pdf-slot-api:3000` -- and this service can
+# reach their Postgres the same way. Nothing here is published to the host:
+# the browser never talks to this service, it talks to Elli's API, which calls
+# in over the network. That is the whole reason no public address or TLS
+# certificate is needed for it.
+
+# Otherwise the project is named after this directory and reads as `api`.
+name: pdf-slot
+
+services:
+  pdf-slot-api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      # The VM's own Postgres, the `db` service in elli-core's compose. Our
+      # tables go in `public` beside theirs; pg-boss gets its own `pdf_jobs`
+      # schema so a `\dt` still shows a readable list.
+      DATABASE_URL: ${PDF_DATABASE_URL:?PDF_DATABASE_URL is required}
+      # A container SAS URL for the Azure container. Set, the bytes go to
+      # Azure; unset, BLOB_DIR below is used instead. Everything this service
+      # writes sits under `pdf/` and it refuses any other path, because the
+      # container holds Elli's own files too.
+      AZURE_BLOB_SAS_URL: ${PDF_AZURE_BLOB_SAS_URL:-}
+      # The alternative to Azure, not an addition: setting both is refused at
+      # startup, because one of them silently wins and the loser's bytes are
+      # written somewhere nobody is looking. Only for a deployment with no
+      # container yet; it is a named volume, since a template's source PDF is
+      # not a cache.
+      BLOB_DIR: ${PDF_BLOB_DIR:-}
+      # Service to service now, not a browser secret: the only caller is
+      # Elli's API, which holds this and sends it as a bearer token.
+      API_KEY: ${PDF_API_KEY:?PDF_API_KEY is required}
+      # Kept for the CORS header, and unused in this shape -- no browser has
+      # this service's address. Left required rather than removed so a
+      # deployment that *does* expose it cannot do so with CORS wide open.
+      WEB_ORIGIN: ${PDF_WEB_ORIGIN:-http://localhost}
+      # Which commit of @pdf-slot/core this image is running. The editor sends
+      # the same header and the service refuses a job when the two differ --
+      # see CORE_VERSION_HEADER. Unset turns the check off, which is only
+      # right while there is one copy of core in play.
+      CORE_VERSION: ${PDF_CORE_VERSION:-}
+      PORT: 3000
+      # `both` is one container serving and rendering. Splitting them is this
+      # same image twice, with `api` and `worker` -- see src/index.ts.
+      ROLE: ${PDF_ROLE:-both}
+    volumes:
+      - pdf_blobs:/var/lib/pdf-slot/blobs
+    networks:
+      - elli_network
+    healthcheck:
+      # The same endpoint Elli's API should check before routing to us.
+      # The response has to be checked, not just awaited: `fetch` resolves for
+      # a 500 as happily as a 200, and `ROLE=worker` answers 503 on purpose.
+      test: ['CMD-SHELL', 'bun -e "const r = await fetch(\"http://127.0.0.1:3000/health\"); process.exit(r.ok ? 0 : 1)"']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  elli_network:
+    # Created by elli-core's compose file; this one joins it rather than
+    # defining a second network with the same name and a different id.
+    external: true
+
+volumes:
+  pdf_blobs:

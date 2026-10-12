@@ -68,3 +68,21 @@ describe('the layout engine version', () => {
     expect(readConfig({ ...base, CORE_VERSION: '' }).coreVersion).toBeUndefined()
   })
 })
+
+describe('two blob stores at once', () => {
+  it('refuses to start rather than guessing which one was meant', () => {
+    // runtime.ts picks the first of the two, so this would have been a
+    // production deployment writing to a container's local disk because a
+    // BLOB_DIR was left in its environment -- read back fine, and gone with
+    // the container.
+    expect(() =>
+      readConfig({
+        DATABASE_URL: 'postgres://x',
+        API_KEY: 'k',
+        WEB_ORIGIN: 'https://app.example.com',
+        BLOB_DIR: '.blobs',
+        AZURE_BLOB_SAS_URL: 'https://acct.blob.core.windows.net/c?sv=x',
+      }),
+    ).toThrow(/not both/)
+  })
+})
