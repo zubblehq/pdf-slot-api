@@ -13,6 +13,11 @@ export default defineConfig({
     // databases at once, and the kernel OOM-killed a worker mid-run on an 8GB
     // machine: the run reported "Worker exited unexpectedly" and 46 of 55
     // tests, which reads exactly like a real failure and is not one.
-    poolOptions: { forks: { maxForks: 4 } },
+    //
+    // `maxWorkers`, not the `poolOptions.forks.maxForks` this was first
+    // written as: vitest 4 removed `poolOptions` and only *warns* about it, so
+    // the cap was being ignored and the runs that passed under it passed by
+    // luck.
+    maxWorkers: 4,
   },
 })

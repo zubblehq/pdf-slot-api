@@ -10,8 +10,8 @@ export default defineConfig({
     environment: 'node',
     include: ['test/e2e/**/*.e2e.test.ts'],
     testTimeout: 60_000,
-    // See vitest.config.ts: a PGlite per file, so the forks are capped.
-    poolOptions: { forks: { maxForks: 4 } },
+    // See vitest.config.ts: a PGlite per file, so the workers are capped.
+    maxWorkers: 4,
   },
   // The web modules under test import each other through the "@/*" alias in
   // apps/web/tsconfig.json, which vite resolves for the app and nothing
