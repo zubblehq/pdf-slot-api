@@ -26,3 +26,27 @@ describe('readConfig', () => {
     })
   })
 })
+
+describe('the layout engine version', () => {
+  const base = {
+    DATABASE_URL: 'postgres://x',
+    API_KEY: 'k',
+    WEB_ORIGIN: 'http://web.test',
+    BLOB_DIR: '.blobs',
+  }
+
+  /**
+   * This exists because the field was declared on Config and never read out
+   * of the environment. Every route test passed -- they set `coreVersion`
+   * directly -- so the guard was dead only on the path that matters, and that
+   * showed up against a running server rather than in the suite.
+   */
+  it('is read from the environment', () => {
+    expect(readConfig({ ...base, CORE_VERSION: 'abc1234' }).coreVersion).toBe('abc1234')
+  })
+
+  it('is absent when unset, which turns the check off', () => {
+    expect(readConfig(base).coreVersion).toBeUndefined()
+    expect(readConfig({ ...base, CORE_VERSION: '' }).coreVersion).toBeUndefined()
+  })
+})

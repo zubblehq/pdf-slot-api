@@ -35,5 +35,6 @@ export function readConfig(env: Record<string, string | undefined>): Config {
     // slash; a copy-pasted `https://app.example.com/` would otherwise block every request.
     webOrigin: env.WEB_ORIGIN!.replace(/\/+$/, ''),
     ...(blobDir ? { blobDir } : {}),
+    ...(env.CORE_VERSION ? { coreVersion: env.CORE_VERSION } : {}),
   }
 }
