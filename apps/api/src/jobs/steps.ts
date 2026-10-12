@@ -1,6 +1,6 @@
 import { createFontMetrics, describeUnsupportedCharacters, findUnsupportedSlots, normalizePdf, renderPdf, toSlots, type EditorDocument, type FontBytes, type FontId, type FontMetrics, type TemplateLayout } from '@pdf-slot/core'
 import { JOB_BATCH_SIZE } from '@pdf-slot/core/contracts'
-import { FatalError } from 'workflow'
+import { FatalJobError } from './fatal.js'
 import { readAll } from '../blob/blobStore.js'
 import { getFileMeta } from '../db/files.js'
 import { getLayout, getValues } from '../db/layouts.js'
@@ -21,10 +21,9 @@ function metricsFor(fonts: FontBytes): (id: FontId) => FontMetrics {
 }
 
 export async function loadJob(jobId: string): Promise<{ batches: number[][] }> {
-  'use step'
   const { db } = await getJobContext()
   const row = await getJobRow(db, jobId)
-  if (!row) throw new FatalError(`Job ${jobId} does not exist`)
+  if (!row) throw new FatalJobError(`Job ${jobId} does not exist`)
   await setJobStatus(db, jobId, { status: 'running' })
   const batches: number[][] = []
   for (let i = 0; i < row.total; i += JOB_BATCH_SIZE) batches.push(Array.from({ length: Math.min(JOB_BATCH_SIZE, row.total - i) }, (_, j) => i + j))
@@ -34,11 +33,11 @@ export async function loadJob(jobId: string): Promise<{ batches: number[][] }> {
 async function loadTemplate(jobId: string): Promise<{ doc: EditorDocument; layout: TemplateLayout; template: Record<string, string> }> {
   const { db, blobs } = await getJobContext()
   const row = await getJobRow(db, jobId)
-  if (!row) throw new FatalError(`Job ${jobId} does not exist`)
+  if (!row) throw new FatalJobError(`Job ${jobId} does not exist`)
   const [file, layout] = await Promise.all([getFileMeta(db, row.fileId), getLayout(db, row.fileId)])
-  if (!file || !layout) throw new FatalError(`File or layout for job ${jobId} is gone`)
+  if (!file || !layout) throw new FatalJobError(`File or layout for job ${jobId} is gone`)
   const object = await blobs.get(file.blobPath)
-  if (!object) throw new FatalError(`Source bytes for ${row.fileId} are gone`)
+  if (!object) throw new FatalJobError(`Source bytes for ${row.fileId} are gone`)
   // What was typed into the boxes in the editor, if this job asked for it
   // to stand in where a record says nothing. Read once per batch, not per
   // record, and left empty otherwise so nothing prints that was not asked for.
@@ -47,13 +46,14 @@ async function loadTemplate(jobId: string): Promise<{ doc: EditorDocument; layou
 }
 
 export async function renderBatch(jobId: string, indices: number[]): Promise<void> {
-  'use step'
   const ctx = await getJobContext()
   const [{ doc, layout, template }, fonts, items] = await Promise.all([loadTemplate(jobId), ctx.fonts(), getJobItems(ctx.db, jobId, indices)])
   const metrics = metricsFor(fonts)
   for (const { index, record, status } of items) {
-    // A Workflow retry re-runs renderBatch from the top with the same indices; items this call (or an
-    // earlier attempt at it) already finished must not be re-rendered or re-marked.
+    // A retry re-runs the whole job from the top, so this is reached again
+    // with the same indices; items this call (or an earlier attempt at it)
+    // already finished must not be re-rendered or re-marked. That skip is
+    // what makes a retry cheap instead of a second full render.
     if (status !== 'pending') continue
     // The record wins wherever it says anything; the template fills the
     // rest, which is nothing at all unless this job asked for it.
@@ -76,7 +76,6 @@ export async function renderBatch(jobId: string, indices: number[]): Promise<voi
 }
 
 export async function finishJob(jobId: string): Promise<void> {
-  'use step'
   const { db, blobs } = await getJobContext()
   const done = await listDoneItemPaths(db, jobId)
   if (done.length === 0) {
