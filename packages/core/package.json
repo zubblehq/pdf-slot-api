@@ -1,7 +1,6 @@
 {
   "name": "@pdf-slot/core",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -24,5 +23,9 @@
     "@types/node": "^22",
     "typescript": "^5",
     "vitest": "^4"
-  }
+  },
+  "description": "Layout and render for PDF text slots: the maths the preview and the export share.",
+  "files": [
+    "src"
+  ]
 }
