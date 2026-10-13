@@ -8,5 +8,5 @@
   // ../web/src/vite-env.d.ts: the end-to-end suites import web modules through
   // the "@/*" path above, and those read `import.meta.env`. Without the
   // declaration this project type-checks web source it cannot describe.
-  "include": ["src", "test", "nitro.config.ts", "drizzle.config.ts", "../web/src/vite-env.d.ts"]
+  "include": ["src", "test", "drizzle.config.ts", "../web/src/vite-env.d.ts"]
 }

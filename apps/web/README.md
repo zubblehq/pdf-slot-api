@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# web — the editor's development harness
 
-## Getting Started
+A Vite app that mounts the PDF slot editor on its own, so a change to the
+geometry can be seen in a browser without standing up Elli's whole frontend.
 
-First, run the development server:
+**This is not the editor that ships.** The shipping copy is a module in
+[`elli-ui`](https://github.com/zubblehq/elli-ui) at `/app/pdf`. Nothing
+deploys from here.
+
+## Why it still exists
+
+`@pdf-slot/core` is developed in this repository, and a change to how text is
+measured or where a glyph lands wants somewhere it can be *looked at*
+immediately — not after a push, a pin bump and a rebuild of somebody else's
+app. This is that somewhere.
+
+It also carries the editor's full suite, which is what proves a core change
+moved nothing: the same tests run in `elli-ui` as `tests/pdf-*.test.ts`.
+
+## The cost, stated plainly
+
+This and the `elli-ui` module are the same code with different packaging, and
+**they will drift.** When they disagree, `elli-ui` is right — it is the one
+users touch.
+
+So a change made here that matters to users is not finished until it is also
+in `elli-ui`. If keeping the two in step becomes a chore rather than a
+convenience, the honest move is to delete this harness and develop core
+against its own tests alone.
+
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev        # :5173 — talks to the API on :3000 when VITE_API_URL is set
+npm test           # bun test --isolate
+npm run typecheck
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`scripts/dev-stack.sh` at the repository root starts this, the API and a
+Postgres together, which is usually what you want.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All optional. Unset, the editor runs on browser storage alone and does not
+offer bulk generation — a supported mode, not a degraded one.
 
-## Learn More
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_URL` | where the service lives. Unset means browser storage only |
+| `VITE_CORE_VERSION` | which commit of core this build runs; sent with every job so the service can refuse a mismatch |
+| `VITE_RENDER_ON_COMMIT` | re-render the PDF on every edit, not only on download. A testing aid for catching preview/export divergence while editing |
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`src/app/lib/env` is the only module that reads `import.meta.env`.

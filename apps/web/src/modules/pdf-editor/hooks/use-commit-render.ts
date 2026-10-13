@@ -17,7 +17,7 @@ import { loadFontBytes } from '@/modules/pdf-editor/lib/fonts/load-fonts'
  *   the canvas paints the real bytes, so the overlay can be checked
  *   against the actual output while editing -- the mode that proved the
  *   two equal (and caught the rotated-page bug). Enabled in tests and via
- *   NEXT_PUBLIC_RENDER_ON_COMMIT=true.
+ *   VITE_RENDER_ON_COMMIT=true.
  *
  * Whichever mode, the first render is from scratch and every later one is
  * an *increment* appended to the last output (`renderPdfIncremental`), so

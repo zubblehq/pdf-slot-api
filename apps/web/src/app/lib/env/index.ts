@@ -2,10 +2,10 @@
  * Everything this app reads from its environment, and the only place that
  * touches `import.meta.env`.
  *
- * One module owns it so a rename costs one file. The names moved once
- * already -- Next exposed browser variables as `process.env.NEXT_PUBLIC_*`,
- * Vite exposes them as `import.meta.env.VITE_*` -- and they will move again
- * when this becomes a module inside elli-ui.
+ * One module owns it so a rename costs one file -- these names have moved
+ * once already, from Next's `process.env.NEXT_PUBLIC_*` to Vite's
+ * `import.meta.env.VITE_*`, and again to `VITE_PDF_*` in elli-ui, where the
+ * module now lives beside everybody else's variables.
  */
 
 /**
