@@ -14,8 +14,11 @@ export async function getFileMeta(db: Db, fileId: string): Promise<FileRow | nul
   return r ? toRow(r) : null
 }
 
-export async function upsertFile(db: Db, row: FileRow): Promise<void> {
-  const insert = { fileId: row.fileId, name: row.name, pages: row.pages, blobPath: row.blobPath, createdAt: new Date(row.createdAt) }
+export async function upsertFile(db: Db, row: FileRow, organisationId: string | null = null): Promise<void> {
+  const insert = { fileId: row.fileId, name: row.name, pages: row.pages, blobPath: row.blobPath, createdAt: new Date(row.createdAt), organisationId }
+  // `organisationId` is deliberately absent from the update set: re-uploading
+  // a file must not silently move it to whoever uploaded it second. Recorded
+  // once, by whoever got there first -- see src/tenancy.ts.
   await db.insert(files).values(insert).onConflictDoUpdate({ target: files.fileId, set: { name: insert.name, pages: insert.pages, blobPath: insert.blobPath } })
 }
 

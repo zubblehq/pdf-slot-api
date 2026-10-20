@@ -12,13 +12,14 @@ export async function listJobBlobPathsForFile(db: Db, fileId: string): Promise<s
   return Array.from(paths)
 }
 
-export async function createJob(db: Db, input: { id: string; fileId: string; records: JobRecord[]; fillFromTemplate?: boolean }): Promise<void> {
+export async function createJob(db: Db, input: { id: string; fileId: string; records: JobRecord[]; fillFromTemplate?: boolean; organisationId?: string | null }): Promise<void> {
   // Transactional: without it, a failure partway through the chunk loop would leave a job row whose
   // item count never reaches `total`, and nothing would ever retry the missing chunks.
   await db.transaction(async (tx) => {
     await tx.insert(jobs).values({
       id: input.id, fileId: input.fileId, status: 'queued', total: input.records.length,
       fillFromTemplate: input.fillFromTemplate ?? false,
+      organisationId: input.organisationId ?? null,
     })
     // Chunked: a single statement with 5000 rows is fine for Postgres but not for every driver's parameter limit.
     for (let i = 0; i < input.records.length; i += 500) {

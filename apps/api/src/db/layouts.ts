@@ -16,12 +16,13 @@ export async function getLayout(db: Db, fileId: string): Promise<TemplateLayout 
   }
 }
 
-export async function putLayout(db: Db, layout: TemplateLayout): Promise<void> {
+export async function putLayout(db: Db, layout: TemplateLayout, organisationId: string | null = null): Promise<void> {
   const row = {
     fileId: layout.fileId,
     slots: layout.slots,
     tables: layout.tables ?? null,
     updatedAt: new Date(layout.updatedAt),
+    organisationId,
   }
   await db.insert(layouts).values(row).onConflictDoUpdate({
     target: layouts.fileId,
@@ -34,8 +35,8 @@ export async function getValues(db: Db, fileId: string): Promise<TemplateValues 
   return r ? { fileId: r.fileId, values: r.values, updatedAt: iso(r.updatedAt) } : null
 }
 
-export async function putValues(db: Db, v: TemplateValues): Promise<void> {
-  const row = { fileId: v.fileId, values: v.values, updatedAt: new Date(v.updatedAt) }
+export async function putValues(db: Db, v: TemplateValues, organisationId: string | null = null): Promise<void> {
+  const row = { fileId: v.fileId, values: v.values, updatedAt: new Date(v.updatedAt), organisationId }
   await db.insert(values).values(row).onConflictDoUpdate({ target: values.fileId, set: { values: row.values, updatedAt: row.updatedAt } })
 }
 

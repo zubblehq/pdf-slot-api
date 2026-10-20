@@ -8,6 +8,7 @@ import { getFileMeta } from '../db/files.js'
 import { getLayout } from '../db/layouts.js'
 import { createJob, getJob, getJobRow, setJobStatus } from '../db/jobs.js'
 import { fileIdParam } from './files.js'
+import { organisationFrom } from '../tenancy.js'
 
 export const jobsRoutes = new Hono<AppEnv>()
 
@@ -45,7 +46,7 @@ jobsRoutes.post(
     }
     const id = crypto.randomUUID()
     const { records, fillFromTemplate } = c.req.valid('json')
-    await createJob(db, { id, fileId, records, fillFromTemplate })
+    await createJob(db, { id, fileId, records, fillFromTemplate, organisationId: organisationFrom(c.req.raw.headers) })
     try {
       await startJob(id)
     } catch (err) {

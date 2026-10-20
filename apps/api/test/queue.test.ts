@@ -12,6 +12,11 @@ import { createQueue, GENERATE_QUEUE, QUEUE_SCHEMA, type Queue } from '../src/jo
  * settled. Those are the behaviours the generation path depends on and the
  * ones no amount of calling `generateJob` directly would exercise.
  *
+ * These need to be the only consumer of that database. A worker running
+ * elsewhere against the same Postgres -- a container left up from a manual
+ * test -- competes for the same jobs, and the symptom is these three timing
+ * out rather than failing, which reads like flakiness and is not.
+ *
  * Skipped when there is no Postgres, so the suite still passes without one:
  *   docker run --rm -d --name pdfslot-pg -e POSTGRES_PASSWORD=pw \
  *     -p 55432:5432 postgres:17

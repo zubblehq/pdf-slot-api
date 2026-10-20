@@ -6,12 +6,26 @@ const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }
 
+/**
+ * Who this row belongs to -- recorded, and not yet filtered on. See
+ * `src/tenancy.ts` for why it is written before it is enforced.
+ *
+ * Nullable because it is honest: rows written before this column existed have
+ * no organisation, and so does anything created by the development stack,
+ * which has no Elli session to take one from. A default would have invented an
+ * owner for them.
+ */
+const organisation = {
+  organisationId: text('organisation_id'),
+}
+
 export const files = pgTable('files', {
   fileId: text('file_id').primaryKey(),
   name: text('name').notNull(),
   pages: jsonb('pages').$type<PageSize[]>().notNull(),
   /** Pathname in the blob store; bytes are never stored in Postgres. */
   blobPath: text('blob_path').notNull(),
+  ...organisation,
   ...timestamps,
 })
 
@@ -21,12 +35,14 @@ export const layouts = pgTable('layouts', {
   // Nullable: a layout saved before tables existed simply has none.
   tables: jsonb('tables').$type<TemplateTable[]>(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+  ...organisation,
 })
 
 export const values = pgTable('values', {
   fileId: text('file_id').primaryKey().references(() => files.fileId, { onDelete: 'cascade' }),
   values: jsonb('values').$type<Record<string, string>>().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+  ...organisation,
 })
 
 export const jobs = pgTable('jobs', {
@@ -46,6 +62,7 @@ export const jobs = pgTable('jobs', {
    * a step is retried tomorrow.
    */
   fillFromTemplate: boolean('fill_from_template').notNull().default(false),
+  ...organisation,
   ...timestamps,
 })
 

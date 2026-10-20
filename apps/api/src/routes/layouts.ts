@@ -6,6 +6,7 @@ import { ApiError, notFound } from '../errors.js'
 import { getFileMeta } from '../db/files.js'
 import { getLayout, getValues, hasDuplicateSlotNames, putLayout, putValues } from '../db/layouts.js'
 import { fileIdParam } from './files.js'
+import { organisationFrom } from '../tenancy.js'
 
 const invalid = () => new ApiError(400, 'invalid_request', 'Invalid body')
 const validate = <T extends typeof templateLayoutSchema | typeof templateValuesSchema>(schema: T) =>
@@ -27,7 +28,7 @@ layoutsRoutes.put('/files/:id/layout', validate(templateLayoutSchema), async (c)
   if (!(await getFileMeta(db, fileId))) throw notFound('File')
   const dup = hasDuplicateSlotNames(layout.slots)
   if (dup !== null) throw new ApiError(409, 'duplicate_slot_name', `Two slots are named "${dup}"`)
-  await putLayout(db, layout)
+  await putLayout(db, layout, organisationFrom(c.req.raw.headers))
   return c.body(null, 204)
 })
 
@@ -43,6 +44,6 @@ layoutsRoutes.put('/files/:id/values', validate(templateValuesSchema), async (c)
   const values = c.req.valid('json')
   if (values.fileId !== fileId) throw invalid()
   if (!(await getFileMeta(db, fileId))) throw notFound('File')
-  await putValues(db, values)
+  await putValues(db, values, organisationFrom(c.req.raw.headers))
   return c.body(null, 204)
 })
