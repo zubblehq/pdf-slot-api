@@ -274,6 +274,13 @@ describe('a table\'s style is typography and nothing else', () => {
       .toEqual({ size: 12, align: 'right' })
   })
 
+  it('letter spacing is typography: kept in the style, and every cell carries it', () => {
+    expect(tableStyle({ letterSpacing: -0.5, x: 3 })).toEqual({ letterSpacing: -0.5 })
+    const table = makeTable({ style: { ...makeTable().style, letterSpacing: 1.5 } })
+    expect(tableCells(table).every((cell) => cell.letterSpacing === 1.5)).toBe(true)
+    expect(tableFromStored(table).style.letterSpacing).toBe(1.5)
+  })
+
   it('a cell\'s place and size come from the table, whatever the style says', () => {
     // A cell is a slot, so an update meant for one carries slot fields.
     // If those reach the style, every cell lands on top of the first.

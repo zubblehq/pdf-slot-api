@@ -1,5 +1,5 @@
 import type { RGB, Slot } from './types'
-import type { Align } from '../layout/wrap'
+import type { Align, VerticalAlign } from '../layout/wrap'
 import type { FontId } from '../fonts/registry'
 
 /**
@@ -31,7 +31,11 @@ export type TableStyle = {
   size: number
   color: RGB
   align: Align
+  /** Where the text sits in its row; absent = top. */
+  verticalAlign?: VerticalAlign
   lineHeight: number
+  /** Extra advance after every glyph, PDF points; absent = 0. See `Slot.letterSpacing`. */
+  letterSpacing?: number
   /**
    * Space kept clear inside every cell, left and top set apart. Shared,
    * because a table whose columns are padded differently looks like a
@@ -80,7 +84,7 @@ export type TemplateTable = {
  * typography, and a table that has swallowed an `x` or a `width` lays
  * every one of its cells out on top of the first (see `tableCells`).
  */
-export const TABLE_STYLE_KEYS = ['fontId', 'size', 'color', 'align', 'lineHeight', 'paddingLeft', 'paddingTop', 'padding'] as const
+export const TABLE_STYLE_KEYS = ['fontId', 'size', 'color', 'align', 'verticalAlign', 'lineHeight', 'letterSpacing', 'paddingLeft', 'paddingTop', 'padding'] as const
 
 /** Just the typography out of whatever was handed over. */
 export function tableStyle(patch: Record<string, unknown>): Partial<TableStyle> {

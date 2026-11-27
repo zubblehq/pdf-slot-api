@@ -24,6 +24,14 @@ describe('contracts', () => {
     expect(templateLayoutSchema.safeParse({ ...layout, updatedAt: 't' }).success).toBe(false)
   })
 
+  it('letter spacing is optional, may be negative, and reaches a table style too', () => {
+    const style = { fontId: 'sans', size: 10, color: { r: 0, g: 0, b: 0 }, align: 'left', lineHeight: 1.2, letterSpacing: 1.5 }
+    const table = { id: 't1', name: 'T', page: 0, x: 0, y: 500, columns: [{ key: 'c', name: 'C', width: 40 }], rowHeights: [20], style }
+    const layout = { fileId: hash, updatedAt: '2026-09-19T00:00:00.000Z', slots: [slot, { ...slot, id: 's2', letterSpacing: -0.5 }], tables: [table] }
+    expect(templateLayoutSchema.parse(layout)).toEqual(layout)
+    expect(templateLayoutSchema.safeParse({ ...layout, slots: [{ ...slot, letterSpacing: '2' }] }).success).toBe(false)
+  })
+
   it('file meta createdAt must be an ISO datetime, like every other timestamp the API returns', () => {
     const meta = { fileId: hash, name: 'a.pdf', pages: [{ width: 612, height: 792 }], createdAt: '2026-09-19T00:00:00.000Z' }
     expect(fileMetaSchema.parse(meta)).toEqual(meta)
