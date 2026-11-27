@@ -40,7 +40,7 @@ describe('embedded fonts', () => {
     const a = decodeEmbeddedFonts()
     const b = decodeEmbeddedFonts()
     // Identity checks written out: vitest's `not.toBe` on unequal objects falls back to a deep
-    // comparison to word its message, which takes seconds over five ~450 KB arrays.
+    // comparison to word its message, which takes seconds over eight ~450 KB arrays.
     expect(a === b).toBe(false)
     expect(a.sans === b.sans).toBe(false)
     expect(a.sans.buffer === b.sans.buffer).toBe(false)

@@ -20,7 +20,7 @@ import * as fontkit from 'fontkit'
 import type { EditorDocument, Slot } from '../document/types'
 import type { FontBytes, FontId } from '../fonts/registry'
 import { normalizeRotation, toUnrotatedPoint } from '../geometry/rotation'
-import { createFontMetrics } from '../layout/metrics'
+import { SPACED_TEXT_FEATURES, createFontMetrics } from '../layout/metrics'
 import { layoutText, slotLayout } from '../layout/wrap'
 
 /** Fixed so identical input yields identical bytes. */
@@ -158,7 +158,11 @@ async function drawSlots(pdf: PDFDocument, slots: Slot[], fonts: FontBytes): Pro
   // (pdf-lib creates it on the page's first drawText and reuses it after),
   // which is marked once all drawing is done.
   const touched = new Set<PDFPage>()
-  const embedded = new Map<FontId, Awaited<ReturnType<typeof pdf.embedFont>>>()
+  // Keyed by face *and* whether the text is spaced: spaced text is shaped
+  // without ligatures (SPACED_TEXT_FEATURES), and pdf-lib fixes a font's
+  // shaping features when it embeds it, so a face used both ways is
+  // embedded twice. A document with no spacing embeds exactly as before.
+  const embedded = new Map<string, Awaited<ReturnType<typeof pdf.embedFont>>>()
   // Scoped to this render call only: createFontMetrics() re-parses the TTF
   // (~150-250 KB per face), so without this a document with many slots on
   // one font would pay that cost once per slot instead of once per font. No
@@ -171,10 +175,16 @@ async function drawSlots(pdf: PDFDocument, slots: Slot[], fonts: FontBytes): Pro
     const page = pages[slot.page]
     if (!page) continue
 
-    let font = embedded.get(slot.fontId)
+    const spacing = slot.letterSpacing ?? 0
+    const fontKey = spacing === 0 ? slot.fontId : `${slot.fontId}:spaced`
+    let font = embedded.get(fontKey)
     if (!font) {
-      font = await pdf.embedFont(fonts[slot.fontId], { subset: true })
-      embedded.set(slot.fontId, font)
+      // A copy of the features: fontkit writes its defaults into the object.
+      font = await pdf.embedFont(
+        fonts[slot.fontId],
+        spacing === 0 ? { subset: true } : { subset: true, features: { ...SPACED_TEXT_FEATURES } },
+      )
+      embedded.set(fontKey, font)
     }
 
     let slotMetrics = metrics.get(slot.fontId)
@@ -201,6 +211,11 @@ async function drawSlots(pdf: PDFDocument, slots: Slot[], fonts: FontBytes): Pro
         size: slot.size,
         font,
         color: rgb(slot.color.r, slot.color.g, slot.color.b),
+        // `Tc`, inside the `q ... Q` pdf-lib wraps each line in, so it
+        // never leaks onto the next slot -- which is why an unspaced slot
+        // need not reset it, and is given no operator at all: its content
+        // stream stays byte-for-byte what it was before spacing existed.
+        ...(spacing === 0 ? {} : { characterSpacing: spacing }),
       })
       touched.add(page)
     }

@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { MIN_TEXT_WIDTH, layoutHeight, layoutText, slotInset, slotLayout } from '../src/layout/wrap.js'
 import type { Slot } from '../src/document/types.js'
 import type { FontMetrics } from '../src/layout/metrics.js'
@@ -204,4 +204,46 @@ test('the left padding holds right-aligned text off the right edge too', () => {
   // the other side or it prints against the rule.
   const lines = layoutText(slotLayout({ ...padded, align: 'right', paddingLeft: 6 }, 'hi'), fixed)
   expect(lines[0]!.x + 20).toBeCloseTo(294)
+})
+
+describe('vertical align', () => {
+  // 10pt in `fixed`: ascender 7.5, descender -2.5, so one line's ink is 10pt.
+  const box: Slot = {
+    id: 'v', page: 0, x: 0, y: 100, width: 100, height: 40, text: 'a',
+    fontId: 'sans', size: 10, color: { r: 0, g: 0, b: 0 }, align: 'left', lineHeight: 1.2,
+  }
+  const firstBaseline = (slot: Slot) => layoutText(slotLayout(slot, slot.text, fixed), fixed)[0]!.baselineY
+
+  test('absent and top lay out exactly as before', () => {
+    expect(firstBaseline(box)).toBe(92.5)
+    expect(firstBaseline({ ...box, verticalAlign: 'top' })).toBe(92.5)
+  })
+
+  test('middle centres the ink in the box, bottom sets it on the floor', () => {
+    // 40pt box, 10pt of ink: 30pt to share.
+    expect(firstBaseline({ ...box, verticalAlign: 'middle' })).toBe(77.5)
+    expect(firstBaseline({ ...box, verticalAlign: 'bottom' })).toBe(62.5)
+  })
+
+  test('several lines move as one block, keeping their spacing', () => {
+    // Ink: 7.5 + 12 + 2.5 = 22pt, leaving 18.
+    const lines = layoutText(slotLayout({ ...box, text: 'a\nb', verticalAlign: 'middle' }, 'a\nb', fixed), fixed)
+    expect(lines.map((l) => l.baselineY)).toEqual([83.5, 71.5])
+  })
+
+  test('the top padding is kept clear at the bottom too', () => {
+    // Box 100..60; padding 5 leaves 95..65 for the text.
+    const y = firstBaseline({ ...box, paddingTop: 5, verticalAlign: 'bottom' })
+    expect(y - 2.5).toBe(65)
+  })
+
+  test('text taller than its box stays hung from the top rather than climbing out', () => {
+    expect(firstBaseline({ ...box, height: 5, verticalAlign: 'bottom' })).toBe(92.5)
+    expect(firstBaseline({ ...box, height: 5, verticalAlign: 'middle' })).toBe(92.5)
+  })
+
+  test('a box with no height of its own has nowhere to move its text', () => {
+    expect(firstBaseline({ ...box, height: undefined, verticalAlign: 'bottom' })).toBe(92.5)
+    expect(firstBaseline({ ...box, height: 0, verticalAlign: 'middle' })).toBe(92.5)
+  })
 })

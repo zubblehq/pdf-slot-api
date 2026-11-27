@@ -24,7 +24,13 @@ export const JOB_BATCH_SIZE = 25
 /** 64-hex SHA-256 (content hash) or 32-hex random id (see apps/web fileHash.ts). */
 export const fileIdSchema = z.string().regex(/^(?:[0-9a-f]{64}|[0-9a-f]{32})$/)
 
-export const fontIdSchema = z.enum(['sans', 'sans-bold', 'serif', 'serif-bold', 'mono'])
+export const fontIdSchema = z.enum([
+  'sans', 'sans-bold', 'serif', 'serif-bold', 'mono',
+  'sans-light', 'sans-medium', 'sans-semibold',
+  'sourceserif', 'sourceserif-bold', 'arial', 'arial-bold', 'georgia', 'georgia-bold',
+  'sourceserif-light', 'sourceserif-semibold', 'georgia-medium', 'georgia-semibold',
+  'mono-light', 'mono-medium', 'mono-semibold', 'mono-bold',
+])
 export const pageSizeSchema = z.object({ width: z.number().positive(), height: z.number().positive() })
 
 export const templateSlotSchema = z.object({
@@ -40,7 +46,10 @@ export const templateSlotSchema = z.object({
   size: z.number().positive(),
   color: z.object({ r: z.number().min(0).max(1), g: z.number().min(0).max(1), b: z.number().min(0).max(1) }),
   align: z.enum(['left', 'center', 'right']),
+  verticalAlign: z.enum(['top', 'middle', 'bottom']).optional(),
   lineHeight: z.number().positive(),
+  /** Absent on everything saved before letter spacing existed: no spacing. */
+  letterSpacing: z.number().optional(),
   paddingLeft: z.number().min(0).optional(),
   paddingTop: z.number().min(0).optional(),
   /** Both at once; still read so files saved before the two existed still open. */
@@ -53,7 +62,10 @@ export const tableStyleSchema = z.object({
   size: z.number().positive(),
   color: z.object({ r: z.number().min(0).max(1), g: z.number().min(0).max(1), b: z.number().min(0).max(1) }),
   align: z.enum(['left', 'center', 'right']),
+  verticalAlign: z.enum(['top', 'middle', 'bottom']).optional(),
   lineHeight: z.number().positive(),
+  /** Absent on everything saved before letter spacing existed: no spacing. */
+  letterSpacing: z.number().optional(),
   paddingLeft: z.number().min(0).optional(),
   paddingTop: z.number().min(0).optional(),
   /** Both at once; still read so files saved before the two existed still open. */

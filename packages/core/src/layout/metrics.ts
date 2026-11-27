@@ -67,8 +67,36 @@ declare module 'fontkit' {
  */
 export const PDF_APPLIES_KERNING = false
 
+/**
+ * The shaping features turned off for text drawn with letter spacing.
+ *
+ * Tracking and ligatures do not mix: spacing a ligature apart is
+ * impossible (it is one glyph), so CSS stops forming optional ligatures
+ * as soon as `letter-spacing` is not zero -- and which ones a browser stops
+ * is not something to leave to the browser. Spaced text is therefore
+ * shaped without these on *both* sides: here, in the PDF writer (the font
+ * is embedded a second time with them off, see render/pdf.ts), and in the
+ * editor's overlay, which sets `font-variant-ligatures: none` -- the CSS
+ * switch for exactly this set. Unspaced text is untouched: it still shapes
+ * with every default feature, exactly as before.
+ */
+export const SPACED_TEXT_FEATURES: Record<string, boolean> = Object.freeze({
+  liga: false, clig: false, dlig: false, hlig: false, calt: false,
+})
+
 export type FontMetrics = {
-  widthOfText(text: string, size: number): number
+  /**
+   * The width of `text` drawn on one line, PDF points.
+   *
+   * With `letterSpacing` (PDF points, may be negative; absent or 0 = none),
+   * the text is shaped as spaced text (see `SPACED_TEXT_FEATURES`) and the
+   * spacing is counted *between* glyphs: `n` glyphs measure their advances
+   * plus `(n - 1) * letterSpacing`. PDF's `Tc` adds it after every glyph,
+   * the last included, but that last one is empty space past the ink -- so
+   * a right-aligned line ends its last glyph on the box edge, and a centred
+   * one is centred on its ink, not on an invisible trailing gap.
+   */
+  widthOfText(text: string, size: number, letterSpacing?: number): number
   ascender(size: number): number
   descender(size: number): number
   /** Characters in `text` this face cannot encode, deduped, in first-seen order. */
@@ -128,10 +156,29 @@ export function createFontMetrics(ttf: Uint8Array): FontMetrics {
    * is one measurement.
    */
   const widthUnits = new Map<string, number>()
+  /** The same for spaced text: its advance units and glyph count, shaped without ligatures. */
+  const spacedUnits = new Map<string, { units: number; glyphs: number }>()
 
   return {
-    widthOfText(text, size) {
+    widthOfText(text, size, letterSpacing = 0) {
       if (text.length === 0) return 0
+      if (letterSpacing !== 0) {
+        let spaced = spacedUnits.get(text)
+        if (spaced === undefined) {
+          // Exactly what pdf-lib draws with: the font embedded with
+          // SPACED_TEXT_FEATURES, whose encodeText runs this same layout().
+          // A copy every call: fontkit writes its own defaults into the
+          // object it is handed, and the shared constant is frozen.
+          const glyphs = font.layout(text, { ...SPACED_TEXT_FEATURES }).glyphs
+          let units = 0
+          for (const glyph of glyphs) units += glyph.advanceWidth
+          if (spacedUnits.size >= WIDTH_CACHE_LIMIT) spacedUnits.clear()
+          spaced = { units, glyphs: glyphs.length }
+          spacedUnits.set(text, spaced)
+        }
+        if (spaced.glyphs === 0) return 0
+        return scale(spaced.units, size) + (spaced.glyphs - 1) * letterSpacing
+      }
       let units = widthUnits.get(text)
       if (units === undefined) {
         // `layout()`, not `glyphsForString()`: this must reproduce pdf-lib's
